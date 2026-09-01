@@ -325,8 +325,30 @@ export const appClient = {
   },
 
   users: {
-    async inviteUser(_email, _role) {
-      throw new Error('Inviting users requires a Supabase Edge Function or server route with the service-role key.');
+    async inviteUser(email, role = 'user', values = {}) {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      throwIfError({ error: sessionError });
+
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        throw new Error('You must be logged in as an admin to invite users.');
+      }
+
+      const response = await fetch('/api/invite-user', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, role, ...values }),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Invite failed.');
+      }
+
+      return payload;
     },
   },
 };

@@ -97,16 +97,10 @@ export default function AdminHubsAdmins() {
     if (!inviteEmail || !inviteHub) return;
     setSaving(true); setMsg("");
     try {
-      await appClient.users.inviteUser(inviteEmail, "user");
-      const refreshed = await appClient.entities.User.list();
-      const found = refreshed.find((u) => u.email === inviteEmail);
-      if (found) {
-        await appClient.entities.User.update(found.id, { assigned_hub_id: inviteHub });
-        setMsg("Invited & assigned!");
-      } else {
-        setMsg("Invited - assign after they register.");
-      }
+      const result = await appClient.users.inviteUser(inviteEmail, "user", { assigned_hub_id: inviteHub });
+      setMsg(result.already_registered ? "Existing user assigned!" : "Invited & assigned!");
       setInviteEmail("");
+      setInviteHub("");
       await load();
     } catch (err) {
       setMsg(err.message || "Invite failed.");

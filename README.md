@@ -51,7 +51,10 @@ Use the normal Vercel Vite defaults:
 - Environment variables:
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
+  - `SUPABASE_SERVICE_ROLE_KEY`
   - `VITE_GEOCODE_REGION` optional, defaults to `Chicago, IL, USA` for estimating hub map coordinates from campus/neighborhood text
+
+The service-role key is used only by the Vercel `/api/invite-user` server route for admin invites. Never prefix it with `VITE_`.
 
 `vercel.json` rewrites all routes to `index.html` so direct links such as `/hubs/:id`, `/login`, and `/reset-password` work.
 
@@ -65,7 +68,7 @@ set role = 'admin'
 where email = 'you@example.com';
 ```
 
-Inviting users from the browser requires a Supabase Edge Function or another server route that uses the service-role key. The current frontend leaves that call guarded with a clear error until that server-side function exists.
+Inviting hub admins uses the Vercel `/api/invite-user` route. Set `SUPABASE_SERVICE_ROLE_KEY` in Vercel before using the invite form.
 
 ## Import Gita Verses
 
