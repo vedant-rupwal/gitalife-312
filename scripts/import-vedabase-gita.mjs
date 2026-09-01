@@ -6,7 +6,7 @@ const OUT_DIR = path.resolve('supabase');
 const CHUNK_DIR = path.join(OUT_DIR, 'seed-verses');
 const JSON_OUT = path.join(OUT_DIR, 'vedabase-gita-verses.json');
 const SQL_OUT = path.join(OUT_DIR, 'seed-verses.sql');
-const SQL_CHUNK_SIZE = 25;
+const SQL_CHUNK_SIZE = 5;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -172,7 +172,7 @@ const writeOutputs = async (verses) => {
   await writeFile(SQL_OUT, toInsertSql(verses), 'utf8');
 
   for (let index = 0; index < verses.length; index += SQL_CHUNK_SIZE) {
-    const chunkNumber = String(index / SQL_CHUNK_SIZE + 1).padStart(2, '0');
+    const chunkNumber = String(index / SQL_CHUNK_SIZE + 1).padStart(3, '0');
     const chunk = verses.slice(index, index + SQL_CHUNK_SIZE);
     await writeFile(
       path.join(CHUNK_DIR, `${chunkNumber}.sql`),
