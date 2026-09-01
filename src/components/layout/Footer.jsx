@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Flame, Instagram, Mail, MapPin } from "lucide-react";
+import { Instagram, Mail, MapPin } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function Footer() {
   return (
@@ -9,9 +10,7 @@ export default function Footer() {
         <div className="grid gap-12 md:grid-cols-4">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-saffron">
-                <Flame className="h-5 w-5" />
-              </div>
+              <BrandLogo className="h-11 w-11 border border-white/20" />
               <div className="flex items-baseline gap-1.5 leading-none">
                 <span className="font-heading text-lg font-bold">GitaLife</span>
                 <span className="font-heading text-lg font-bold text-saffron">312</span>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Flame } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -18,9 +19,7 @@ export default function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-saffron text-white transition-transform group-hover:scale-110">
-              <Flame className="h-5 w-5" />
-            </div>
+            <BrandLogo className="h-10 w-10 border border-saffron/20 shadow-sm transition-transform group-hover:scale-110" />
             <div className="flex items-baseline gap-1.5 leading-none">
               <span className="font-heading text-lg font-bold text-navy tracking-tight">GitaLife</span>
               <span className="font-heading text-lg font-bold text-saffron tracking-tight">312</span>

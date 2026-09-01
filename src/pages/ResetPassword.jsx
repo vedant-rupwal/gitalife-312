@@ -43,7 +43,6 @@ export default function ResetPassword() {
 
   return (
     <AuthLayout
-      icon={Lock}
       title="New password"
       subtitle="Enter your new password below"
     >

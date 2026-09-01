@@ -4,7 +4,7 @@ import { appClient } from "@/api/appClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { safeReturnTo } from "@/lib/authReturnTo";
 
@@ -45,7 +45,6 @@ export default function Login() {
 
   return (
     <AuthLayout
-      icon={LogIn}
       title="Welcome back"
       subtitle="Log in to your account"
       footer={

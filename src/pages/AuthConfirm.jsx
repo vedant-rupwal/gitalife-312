@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Loader2, MailCheck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import { appClient } from "@/api/appClient";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,6 @@ export default function AuthConfirm() {
 
   return (
     <AuthLayout
-      icon={MailCheck}
       title={error ? "Link problem" : "Confirming link"}
       subtitle={error || "One moment while we confirm your email link."}
     >
