@@ -95,7 +95,7 @@ export default async function handler(req, res) {
     return json(res, 200, { profile: updatedProfile, already_registered: true });
   }
 
-  const redirectTo = `${getOrigin(req)}/login`;
+  const redirectTo = `${getOrigin(req)}/reset-password`;
   const { data: inviteData, error: inviteError } = await serviceClient.auth.admin.inviteUserByEmail(normalizedEmail, {
     redirectTo,
   });

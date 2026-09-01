@@ -43,6 +43,12 @@ Required Supabase project settings:
   - `https://your-vercel-domain.vercel.app/*`
 - Set Auth OTP/link expiry to `300` seconds if you want reset-password links to expire after 5 minutes.
 
+Recommended Supabase email template links:
+
+- Confirm signup: `<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup">Confirm your email</a>`
+- Invite user: `<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite">Accept invite</a>`
+- Reset password: `<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery">Reset password</a>`
+
 The browser app uses only the Supabase anon key. Never expose the service-role key in Vercel client env vars.
 
 ## Vercel Setup

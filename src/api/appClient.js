@@ -300,6 +300,15 @@ export const appClient = {
       return data.session || data;
     },
 
+    async verifyTokenHash({ tokenHash, type }) {
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type,
+      });
+      throwIfError({ error });
+      return data.session || data;
+    },
+
     async resendOtp(email) {
       const { data, error } = await supabase.auth.resend({
         type: 'signup',
