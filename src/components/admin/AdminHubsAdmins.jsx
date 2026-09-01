@@ -47,10 +47,21 @@ export default function AdminHubsAdmins() {
     setMsg("");
 
     try {
+      const optionalText = (value) => value.trim() || null;
       await appClient.entities.Hub.create({
-        ...hubForm,
+        name: hubForm.name.trim(),
+        campus: optionalText(hubForm.campus),
+        neighborhood: optionalText(hubForm.neighborhood),
+        coordinator_name: optionalText(hubForm.coordinator_name),
+        coordinator_contact: optionalText(hubForm.coordinator_contact),
+        whatsapp_link: optionalText(hubForm.whatsapp_link),
+        meeting_day: optionalText(hubForm.meeting_day),
+        meeting_time: optionalText(hubForm.meeting_time),
+        description: optionalText(hubForm.description),
+        image_url: optionalText(hubForm.image_url),
         lat: hubForm.lat === "" ? null : Number(hubForm.lat),
         lng: hubForm.lng === "" ? null : Number(hubForm.lng),
+        instagram_handle: optionalText(hubForm.instagram_handle),
       });
       setHubForm(blankHub);
       setMsg("Hub created.");
@@ -108,8 +119,8 @@ export default function AdminHubsAdmins() {
         <h3 className="font-heading text-lg font-bold text-navy mb-4 flex items-center gap-2"><Plus className="h-5 w-5 text-saffron" />Create Hub</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <div><label className={labelCls}>Name</label><input value={hubForm.name} onChange={(e) => setHubForm({ ...hubForm, name: e.target.value })} className={inputCls} required /></div>
-          <div><label className={labelCls}>Campus</label><input value={hubForm.campus} onChange={(e) => setHubForm({ ...hubForm, campus: e.target.value })} className={inputCls} required /></div>
-          <div><label className={labelCls}>Neighborhood</label><input value={hubForm.neighborhood} onChange={(e) => setHubForm({ ...hubForm, neighborhood: e.target.value })} className={inputCls} required /></div>
+          <div><label className={labelCls}>Campus</label><input value={hubForm.campus} onChange={(e) => setHubForm({ ...hubForm, campus: e.target.value })} className={inputCls} /></div>
+          <div><label className={labelCls}>Neighborhood</label><input value={hubForm.neighborhood} onChange={(e) => setHubForm({ ...hubForm, neighborhood: e.target.value })} className={inputCls} /></div>
           <div><label className={labelCls}>Coordinator Name</label><input value={hubForm.coordinator_name} onChange={(e) => setHubForm({ ...hubForm, coordinator_name: e.target.value })} className={inputCls} /></div>
           <div><label className={labelCls}>Coordinator Contact</label><input value={hubForm.coordinator_contact} onChange={(e) => setHubForm({ ...hubForm, coordinator_contact: e.target.value })} className={inputCls} /></div>
           <div><label className={labelCls}>WhatsApp Link</label><input value={hubForm.whatsapp_link} onChange={(e) => setHubForm({ ...hubForm, whatsapp_link: e.target.value })} className={inputCls} /></div>

@@ -28,6 +28,8 @@ export default function HubDetail() {
   const now = new Date();
   const upcoming = events.filter((e) => new Date(e.event_date) >= now);
   const recent = events.filter((e) => new Date(e.event_date) < now).reverse();
+  const locationLabel = [hub.campus, hub.neighborhood].filter(Boolean).join(" - ");
+  const meetingLabel = [hub.meeting_day, hub.meeting_time].filter(Boolean).join(" at ");
 
   return (
     <div className="bg-cream min-h-screen">
@@ -41,11 +43,15 @@ export default function HubDetail() {
         )}
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
-            <span className="inline-flex items-center gap-1 rounded-full bg-saffron/10 px-3 py-1 font-heading text-xs font-semibold text-saffron mb-3"><MapPin className="h-3 w-3" />{hub.campus} · {hub.neighborhood}</span>
+            {locationLabel && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-saffron/10 px-3 py-1 font-heading text-xs font-semibold text-saffron mb-3"><MapPin className="h-3 w-3" />{locationLabel}</span>
+            )}
             <h1 className="font-heading text-3xl font-bold text-navy mb-3">{hub.name}</h1>
-            <p className="font-body text-base text-navy/70 mb-6">{hub.description}</p>
+            <p className="font-body text-base text-navy/70 mb-6">{hub.description || "Hub details coming soon."}</p>
             <div className="space-y-3 mb-6">
-              <div className="flex items-center gap-3 text-sm text-navy/80"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-saffron/10 text-saffron"><Clock className="h-4 w-4" /></div>{hub.meeting_day} at {hub.meeting_time}</div>
+              {meetingLabel && (
+                <div className="flex items-center gap-3 text-sm text-navy/80"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-saffron/10 text-saffron"><Clock className="h-4 w-4" /></div>{meetingLabel}</div>
+              )}
               {hub.coordinator_name && (
                 <div className="flex items-center gap-3 text-sm text-navy/80"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-saffron/10 text-saffron"><User className="h-4 w-4" /></div>{hub.coordinator_name}</div>
               )}
@@ -58,9 +64,11 @@ export default function HubDetail() {
                 <MessageCircle className="h-5 w-5" />Join WhatsApp
               </a>
             )}
-            <div className="mt-6">
-              <InstagramWidget handle={hub.instagram_handle} events={events} />
-            </div>
+            {hub.instagram_handle && (
+              <div className="mt-6">
+                <InstagramWidget handle={hub.instagram_handle} events={events} />
+              </div>
+            )}
           </div>
           <div className="lg:col-span-2 space-y-10">
             <div>

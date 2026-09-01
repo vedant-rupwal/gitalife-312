@@ -13,8 +13,8 @@ create table if not exists public.profiles (
 create table if not exists public.hubs (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  campus text not null,
-  neighborhood text not null,
+  campus text,
+  neighborhood text,
   coordinator_name text,
   coordinator_contact text,
   whatsapp_link text,
@@ -28,6 +28,9 @@ create table if not exists public.hubs (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.hubs alter column campus drop not null;
+alter table public.hubs alter column neighborhood drop not null;
 
 do $$
 begin
