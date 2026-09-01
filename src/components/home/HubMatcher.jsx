@@ -15,6 +15,8 @@ export default function HubMatcher() {
   }, []);
 
   const match = hubs.find((h) => h.id === selected);
+  const hubLocation = (hub) => [hub.campus, hub.neighborhood].filter(Boolean).join(" - ") || hub.name;
+  const meeting = (hub) => [hub.meeting_day, hub.meeting_time].filter(Boolean).join(" at ") || "Meeting time coming soon";
 
   return (
     <div className="grid lg:grid-cols-2 gap-8 items-start">
@@ -35,7 +37,7 @@ export default function HubMatcher() {
                 )}
               >
                 <MapPin className="h-4 w-4" />
-                {hub.campus}
+                {hubLocation(hub)}
               </button>
             ))}
         </div>
@@ -48,33 +50,39 @@ export default function HubMatcher() {
               <span className="font-heading text-xs font-semibold text-saffron uppercase tracking-wider">Coordinator Dossier</span>
             </div>
             <h3 className="font-heading text-2xl font-bold text-navy mb-1">{match.name}</h3>
-            <p className="font-body text-sm text-navy/60 mb-5">{match.neighborhood} · {match.meeting_day} at {match.meeting_time}</p>
+            <p className="font-body text-sm text-navy/60 mb-5">{meeting(match)}</p>
 
             <div className="space-y-3 mb-6">
-              <div className="flex items-center gap-3 text-sm">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-saffron/10 text-saffron">
-                  <User className="h-4 w-4" />
+              {match.coordinator_name && (
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-saffron/10 text-saffron">
+                    <User className="h-4 w-4" />
+                  </div>
+                  <span className="font-body text-navy/80">{match.coordinator_name}</span>
                 </div>
-                <span className="font-body text-navy/80">{match.coordinator_name}</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-river/10 text-river">
-                  <Phone className="h-4 w-4" />
+              )}
+              {match.coordinator_contact && (
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-river/10 text-river">
+                    <Phone className="h-4 w-4" />
+                  </div>
+                  <span className="font-body text-navy/80">{match.coordinator_contact}</span>
                 </div>
-                <span className="font-body text-navy/80">{match.coordinator_contact}</span>
-              </div>
+              )}
             </div>
 
-            <a
-              href={match.whatsapp_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center justify-center gap-2 w-full rounded-xl bg-river px-6 py-4 font-heading text-sm font-semibold text-white transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-river/30"
-            >
-              <MessageCircle className="h-5 w-5" />
-              Join the WhatsApp Sanctuary
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </a>
+            {match.whatsapp_link && (
+              <a
+                href={match.whatsapp_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center justify-center gap-2 w-full rounded-xl bg-river px-6 py-4 font-heading text-sm font-semibold text-white transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-river/30"
+              >
+                <MessageCircle className="h-5 w-5" />
+                Join the WhatsApp Sanctuary
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </a>
+            )}
           </div>
         ) : (
           <div className="flex h-full min-h-[280px] items-center justify-center rounded-2xl border-2 border-dashed border-navy/10 bg-cream/50">

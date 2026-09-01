@@ -46,6 +46,20 @@ const throwIfError = ({ error }) => {
   if (error) throw error;
 };
 
+const HUB_IMAGES_BUCKET = 'hub-images';
+
+const cleanFileName = (fileName = 'hub-image') => {
+  const [name, ...rest] = fileName.split('.');
+  const extension = rest.pop() || 'jpg';
+  const safeName = (name || 'hub-image')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'hub-image';
+
+  return `${safeName}.${extension.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'}`;
+};
+
 const applyFilters = (query, filters = {}) => {
   return Object.entries(filters).reduce((nextQuery, [key, value]) => {
     if (Array.isArray(value)) return nextQuery.in(key, value);
@@ -154,6 +168,32 @@ const redirectTo = (path = '/') => {
 
 export const appClient = {
   supabase,
+
+  storage: {
+    async uploadHubImage(file) {
+      if (!file) return null;
+
+      const imageId = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const path = `${imageId}-${cleanFileName(file.name)}`;
+      const { data, error } = await supabase.storage
+        .from(HUB_IMAGES_BUCKET)
+        .upload(path, file, {
+          cacheControl: '3600',
+          contentType: file.type || undefined,
+          upsert: false,
+        });
+
+      throwIfError({ error });
+
+      const { data: publicUrlData } = supabase.storage
+        .from(HUB_IMAGES_BUCKET)
+        .getPublicUrl(data.path);
+
+      return publicUrlData.publicUrl;
+    },
+  },
 
   entities: Object.fromEntries(
     Object.keys(tableNames).map((entityName) => [entityName, createEntity(entityName)]),

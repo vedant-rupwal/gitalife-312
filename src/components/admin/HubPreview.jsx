@@ -2,6 +2,9 @@ import React from "react";
 import { X, MapPin, Clock, User, Phone, MessageCircle, Eye } from "lucide-react";
 
 export default function HubPreview({ hub, onClose }) {
+  const location = [hub.campus, hub.neighborhood].filter(Boolean).join(" - ") || "Location coming soon";
+  const meeting = [hub.meeting_day, hub.meeting_time].filter(Boolean).join(" at ") || "Meeting time coming soon";
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-navy/60 backdrop-blur-sm" onClick={onClose} />
@@ -27,14 +30,14 @@ export default function HubPreview({ hub, onClose }) {
           <div className="grid lg:grid-cols-3 gap-6">
             <div>
               <span className="inline-flex items-center gap-1 rounded-full bg-saffron/10 px-3 py-1 font-heading text-xs font-semibold text-saffron mb-3">
-                <MapPin className="h-3 w-3" />{hub.campus} · {hub.neighborhood}
+                <MapPin className="h-3 w-3" />{location}
               </span>
               <h1 className="font-heading text-2xl font-bold text-navy mb-2">{hub.name || "Hub name"}</h1>
               <p className="font-body text-sm text-navy/70 mb-4">{hub.description || "No description yet."}</p>
               <div className="space-y-2 mb-4 text-sm text-navy/80">
-                <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-saffron" />{hub.meeting_day} at {hub.meeting_time}</div>
-                <div className="flex items-center gap-2"><User className="h-4 w-4 text-saffron" />{hub.coordinator_name || "—"}</div>
-                <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-river" />{hub.coordinator_contact || "—"}</div>
+                <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-saffron" />{meeting}</div>
+                <div className="flex items-center gap-2"><User className="h-4 w-4 text-saffron" />{hub.coordinator_name || "-"}</div>
+                <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-river" />{hub.coordinator_contact || "-"}</div>
               </div>
               {hub.whatsapp_link && (
                 <span className="flex items-center justify-center gap-2 w-full rounded-xl bg-river px-5 py-3 font-heading text-sm font-semibold text-white">

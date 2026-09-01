@@ -27,6 +27,8 @@ npm run dev
 
 Run [supabase/schema.sql](./supabase/schema.sql) in the Supabase SQL editor. It creates the app tables, profile trigger, row-level security policies, and event signup counter trigger.
 
+If you already ran the older schema, run [supabase/migrations/hub-location-and-image-upload.sql](./supabase/migrations/hub-location-and-image-upload.sql). It creates the public `hub-images` Storage bucket and enforces that each hub has either a campus or a neighborhood.
+
 Required Supabase project settings:
 
 - Enable Email auth.

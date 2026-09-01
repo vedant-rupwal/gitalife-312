@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { appClient } from "@/api/appClient";
 import { Link } from "react-router-dom";
-import { Trash2, UserPlus, Loader2, Check, Pencil, Plus } from "lucide-react";
+import { Trash2, UserPlus, Loader2, Check, Pencil, Plus, Upload } from "lucide-react";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20 transition-all";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
@@ -15,7 +15,6 @@ const blankHub = {
   meeting_day: "",
   meeting_time: "",
   description: "",
-  image_url: "",
   lat: "",
   lng: "",
   instagram_handle: "",
@@ -28,18 +27,22 @@ export default function AdminHubsAdmins() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteHub, setInviteHub] = useState("");
   const [hubForm, setHubForm] = useState(blankHub);
+  const [hubImageFile, setHubImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [creatingHub, setCreatingHub] = useState(false);
   const [msg, setMsg] = useState("");
 
   const load = async () => {
     const [h, u] = await Promise.all([appClient.entities.Hub.list(), appClient.entities.User.list()]);
-    setHubs(h); setUsers(u); setLoading(false);
+    setHubs(h);
+    setUsers(u);
+    setLoading(false);
   };
   useEffect(() => { load().catch(() => setLoading(false)); }, []);
 
-  const hubName = (id) => hubs.find((h) => h.id === id)?.name || "—";
+  const hubName = (id) => hubs.find((h) => h.id === id)?.name || "-";
   const userHub = (u) => u.assigned_hub_id || u.data?.assigned_hub_id;
+  const hubLocation = (hub) => [hub.campus, hub.neighborhood].filter(Boolean).join(" - ") || "Location coming soon";
 
   const createHub = async (e) => {
     e.preventDefault();
@@ -48,6 +51,17 @@ export default function AdminHubsAdmins() {
 
     try {
       const optionalText = (value) => value.trim() || null;
+      if (!hubForm.name.trim()) {
+        throw new Error("Hub name is required.");
+      }
+      if (!hubForm.campus.trim() && !hubForm.neighborhood.trim()) {
+        throw new Error("Add either a campus or a neighborhood.");
+      }
+
+      const uploadedImageUrl = hubImageFile
+        ? await appClient.storage.uploadHubImage(hubImageFile)
+        : null;
+
       await appClient.entities.Hub.create({
         name: hubForm.name.trim(),
         campus: optionalText(hubForm.campus),
@@ -58,12 +72,13 @@ export default function AdminHubsAdmins() {
         meeting_day: optionalText(hubForm.meeting_day),
         meeting_time: optionalText(hubForm.meeting_time),
         description: optionalText(hubForm.description),
-        image_url: optionalText(hubForm.image_url),
+        image_url: uploadedImageUrl,
         lat: hubForm.lat === "" ? null : Number(hubForm.lat),
         lng: hubForm.lng === "" ? null : Number(hubForm.lng),
         instagram_handle: optionalText(hubForm.instagram_handle),
       });
       setHubForm(blankHub);
+      setHubImageFile(null);
       setMsg("Hub created.");
       await load();
     } catch (err) {
@@ -86,7 +101,7 @@ export default function AdminHubsAdmins() {
         await appClient.entities.User.update(found.id, { assigned_hub_id: inviteHub });
         setMsg("Invited & assigned!");
       } else {
-        setMsg("Invited — assign after they register.");
+        setMsg("Invited - assign after they register.");
       }
       setInviteEmail("");
       await load();
@@ -128,7 +143,14 @@ export default function AdminHubsAdmins() {
           <div><label className={labelCls}>Meeting Time</label><input value={hubForm.meeting_time} onChange={(e) => setHubForm({ ...hubForm, meeting_time: e.target.value })} className={inputCls} placeholder="6:30 PM" /></div>
           <div><label className={labelCls}>Latitude</label><input type="number" step="any" value={hubForm.lat} onChange={(e) => setHubForm({ ...hubForm, lat: e.target.value })} className={inputCls} /></div>
           <div><label className={labelCls}>Longitude</label><input type="number" step="any" value={hubForm.lng} onChange={(e) => setHubForm({ ...hubForm, lng: e.target.value })} className={inputCls} /></div>
-          <div><label className={labelCls}>Image URL</label><input value={hubForm.image_url} onChange={(e) => setHubForm({ ...hubForm, image_url: e.target.value })} className={inputCls} /></div>
+          <div>
+            <label className={labelCls}>Hub Image</label>
+            <label className={`${inputCls} flex cursor-pointer items-center gap-2`}>
+              <Upload className="h-4 w-4 text-saffron" />
+              <span className="truncate">{hubImageFile?.name || "Upload image"}</span>
+              <input type="file" accept="image/*" onChange={(e) => setHubImageFile(e.target.files?.[0] || null)} className="sr-only" />
+            </label>
+          </div>
           <div><label className={labelCls}>Instagram Handle</label><input value={hubForm.instagram_handle} onChange={(e) => setHubForm({ ...hubForm, instagram_handle: e.target.value })} className={inputCls} placeholder="gitalife312" /></div>
           <div className="sm:col-span-2"><label className={labelCls}>Description</label><textarea value={hubForm.description} onChange={(e) => setHubForm({ ...hubForm, description: e.target.value })} className={inputCls} rows={3} /></div>
         </div>
@@ -147,8 +169,8 @@ export default function AdminHubsAdmins() {
           <div>
             <label className={labelCls}>Assign to Hub</label>
             <select value={inviteHub} onChange={(e) => setInviteHub(e.target.value)} className={inputCls} required>
-              <option value="">Select hub…</option>
-              {hubs.map((h) => <option key={h.id} value={h.id}>{h.name} ({h.campus})</option>)}
+              <option value="">Select hub...</option>
+              {hubs.map((h) => <option key={h.id} value={h.id}>{h.name} ({hubLocation(h)})</option>)}
             </select>
           </div>
         </div>
@@ -183,7 +205,7 @@ export default function AdminHubsAdmins() {
             <div key={h.id} className="flex items-center justify-between gap-3 rounded-xl border border-navy/8 px-4 py-3">
               <div className="min-w-0">
                 <p className="font-heading text-sm font-bold text-navy">{h.name}</p>
-                <p className="font-body text-xs text-navy/50">{h.campus} · {h.neighborhood}</p>
+                <p className="font-body text-xs text-navy/50">{hubLocation(h)}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Link to={`/admin/hub/${h.id}`} className="flex items-center gap-1 rounded-lg bg-navy/5 px-3 py-2 font-heading text-xs font-semibold text-navy hover:bg-navy/10"><Pencil className="h-3.5 w-3.5" />Edit</Link>
