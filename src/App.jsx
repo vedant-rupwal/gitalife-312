@@ -1,11 +1,15 @@
+import { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
+import { Analytics } from '@vercel/analytics/react';
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { appClient } from '@/api/appClient';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
+import AnalyticsTracker from '@/components/AnalyticsTracker';
 import Layout from '@/components/layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Home from '@/pages/Home';
@@ -20,6 +24,31 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 // Add page imports here
+
+const AuthRecoveryRedirect = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const hasRecoveryHash = window.location.hash.includes('type=recovery');
+    const hasRecoveryQuery = new URLSearchParams(location.search).get('type') === 'recovery';
+    if ((hasRecoveryHash || hasRecoveryQuery) && location.pathname !== '/reset-password') {
+      navigate(`/reset-password${location.search}${window.location.hash}`, { replace: true });
+    }
+  }, [location.pathname, location.search, navigate]);
+
+  useEffect(() => {
+    const { data } = appClient.supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/reset-password', { replace: true });
+      }
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, [navigate]);
+
+  return null;
+};
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -74,10 +103,13 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
+          <AuthRecoveryRedirect />
           <ScrollToTop />
           <AuthenticatedApp />
         </Router>
         <Toaster />
+        <Analytics />
+        <AnalyticsTracker />
       </QueryClientProvider>
     </AuthProvider>
   )

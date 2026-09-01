@@ -57,6 +57,11 @@ export default function VerseOfTheDay({ embedded = false }) {
         <p className="font-display text-2xl sm:text-3xl lg:text-4xl font-medium text-white/95 leading-relaxed italic">
           {verse.sanskrit}
         </p>
+        {verse.transliteration && (
+          <p className="mt-6 font-body text-base sm:text-lg text-saffron/90 leading-relaxed max-w-2xl mx-auto">
+            {verse.transliteration}
+          </p>
+        )}
         <div className="my-8 flex items-center justify-center gap-3">
           <div className="h-px w-12 bg-saffron/40" />
           <div className="h-2 w-2 rounded-full bg-saffron" />
@@ -66,13 +71,6 @@ export default function VerseOfTheDay({ embedded = false }) {
           {verse.translation}
         </p>
       </div>
-
-      {verse.purport && (
-        <div className="verse-blur mt-10 max-w-2xl mx-auto rounded-2xl border border-white/10 bg-white/5 p-6 text-left transition-all duration-500">
-          <p className="font-body text-sm text-saffron font-semibold uppercase tracking-wider mb-2">City-Life Application</p>
-          <p className="font-body text-base text-white/70 leading-relaxed">{verse.purport}</p>
-        </div>
-      )}
     </div>
   );
 

@@ -34,7 +34,7 @@ export default function Hero() {
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4 float-up" style={{ animationDelay: "0.3s" }}>
             <Link
-              to="/dashboard"
+              to="/hubs"
               className="group inline-flex items-center justify-center gap-2 rounded-xl bg-saffron px-7 py-4 font-heading text-base font-semibold text-white transition-all hover:scale-105 hover:shadow-xl hover:shadow-saffron/30"
             >
               Find Your WindyCity Hub

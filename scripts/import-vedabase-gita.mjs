@@ -61,11 +61,6 @@ const extractInnerText = (html, className, nextClassName) => {
   return stripTags(section.replace(/<h2[\s\S]*?<\/h2>/gi, ''));
 };
 
-const normalizePurport = (value) => value
-  .replace(/^Purport\s*/i, '')
-  .replace(/\n{3,}/g, '\n\n')
-  .trim();
-
 const sqlString = (value) => {
   if (value === null || value === undefined) return 'null';
   return `'${String(value).replace(/'/g, "''")}'`;
@@ -116,9 +111,7 @@ const fetchVerse = async (chapter, verseRef) => {
     verse_number: Number(verseRef.split('-')[0]),
     sanskrit: extractInnerText(html, 'devanagari', 'verse_text'),
     transliteration: extractInnerText(html, 'verse_text', 'synonyms'),
-    synonyms: extractInnerText(html, 'synonyms', 'translation'),
     translation: extractInnerText(html, 'translation', 'purport').replace(/^Translation\s*/i, '').trim(),
-    purport: normalizePurport(extractInnerText(html, 'purport')),
     source_url: sourceUrl,
     is_active: true,
   };
@@ -131,9 +124,9 @@ const toInsertSql = (verses) => {
     verse.verse_number,
     sqlString(verse.sanskrit),
     sqlString(verse.transliteration),
-    sqlString(verse.synonyms),
+    'null',
     sqlString(verse.translation),
-    sqlString(verse.purport),
+    'null',
     sqlString(verse.source_url),
     verse.is_active,
   ].join(', ')})`);

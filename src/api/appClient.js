@@ -47,6 +47,7 @@ const throwIfError = ({ error }) => {
 };
 
 const HUB_IMAGES_BUCKET = 'hub-images';
+const EVENT_IMAGES_BUCKET = 'event-images';
 const DEFAULT_GEOCODE_REGION = import.meta.env.VITE_GEOCODE_REGION || 'Chicago, IL, USA';
 
 const cleanFileName = (fileName = 'hub-image') => {
@@ -195,7 +196,7 @@ export const appClient = {
   supabase,
 
   storage: {
-    async uploadHubImage(file) {
+    async uploadImage(file, bucketName) {
       if (!file) return null;
 
       const imageId = typeof crypto !== 'undefined' && crypto.randomUUID
@@ -203,7 +204,7 @@ export const appClient = {
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const path = `${imageId}-${cleanFileName(file.name)}`;
       const { data, error } = await supabase.storage
-        .from(HUB_IMAGES_BUCKET)
+        .from(bucketName)
         .upload(path, file, {
           cacheControl: '3600',
           contentType: file.type || undefined,
@@ -213,10 +214,18 @@ export const appClient = {
       throwIfError({ error });
 
       const { data: publicUrlData } = supabase.storage
-        .from(HUB_IMAGES_BUCKET)
+        .from(bucketName)
         .getPublicUrl(data.path);
 
       return publicUrlData.publicUrl;
+    },
+
+    async uploadHubImage(file) {
+      return this.uploadImage(file, HUB_IMAGES_BUCKET);
+    },
+
+    async uploadEventImage(file) {
+      return this.uploadImage(file, EVENT_IMAGES_BUCKET);
     },
   },
 

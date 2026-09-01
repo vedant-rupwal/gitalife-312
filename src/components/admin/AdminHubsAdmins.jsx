@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { appClient } from "@/api/appClient";
 import { Link } from "react-router-dom";
-import { Trash2, UserPlus, Loader2, Check, Pencil, Plus, Upload } from "lucide-react";
+import { Trash2, UserPlus, Loader2, Check, Pencil, Plus, Upload, ExternalLink } from "lucide-react";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20 transition-all";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
+const required = (label) => `${label} (Required)`;
+const optional = (label) => `${label} (Optional)`;
+const draftKey = "gitalife.root.hubDraft";
 const blankHub = {
   name: "",
   campus: "",
@@ -24,7 +27,13 @@ export default function AdminHubsAdmins() {
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteHub, setInviteHub] = useState("");
-  const [hubForm, setHubForm] = useState(blankHub);
+  const [hubForm, setHubForm] = useState(() => {
+    try {
+      return { ...blankHub, ...JSON.parse(sessionStorage.getItem(draftKey) || "{}") };
+    } catch {
+      return blankHub;
+    }
+  });
   const [hubImageFile, setHubImageFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [creatingHub, setCreatingHub] = useState(false);
@@ -37,6 +46,7 @@ export default function AdminHubsAdmins() {
     setLoading(false);
   };
   useEffect(() => { load().catch(() => setLoading(false)); }, []);
+  useEffect(() => { sessionStorage.setItem(draftKey, JSON.stringify(hubForm)); }, [hubForm]);
 
   const hubName = (id) => hubs.find((h) => h.id === id)?.name || "-";
   const userHub = (u) => u.assigned_hub_id || u.data?.assigned_hub_id;
@@ -82,6 +92,7 @@ export default function AdminHubsAdmins() {
       });
       setHubForm(blankHub);
       setHubImageFile(null);
+      sessionStorage.removeItem(draftKey);
       setMsg("Hub created.");
       await load();
     } catch (err) {
@@ -146,24 +157,24 @@ export default function AdminHubsAdmins() {
       <form onSubmit={createHub} className="rounded-2xl bg-white border border-navy/8 p-6">
         <h3 className="font-heading text-lg font-bold text-navy mb-4 flex items-center gap-2"><Plus className="h-5 w-5 text-saffron" />Create Hub</h3>
         <div className="grid sm:grid-cols-2 gap-4">
-          <div><label className={labelCls}>Name</label><input value={hubForm.name} onChange={(e) => setHubForm({ ...hubForm, name: e.target.value })} className={inputCls} required /></div>
-          <div><label className={labelCls}>Campus</label><input value={hubForm.campus} onChange={(e) => setHubForm({ ...hubForm, campus: e.target.value })} className={inputCls} /></div>
-          <div><label className={labelCls}>Neighborhood</label><input value={hubForm.neighborhood} onChange={(e) => setHubForm({ ...hubForm, neighborhood: e.target.value })} className={inputCls} /></div>
-          <div><label className={labelCls}>Coordinator Name</label><input value={hubForm.coordinator_name} onChange={(e) => setHubForm({ ...hubForm, coordinator_name: e.target.value })} className={inputCls} /></div>
-          <div><label className={labelCls}>Coordinator Contact</label><input value={hubForm.coordinator_contact} onChange={(e) => setHubForm({ ...hubForm, coordinator_contact: e.target.value })} className={inputCls} /></div>
-          <div><label className={labelCls}>WhatsApp Link</label><input value={hubForm.whatsapp_link} onChange={(e) => setHubForm({ ...hubForm, whatsapp_link: e.target.value })} className={inputCls} /></div>
-          <div><label className={labelCls}>Meeting Day</label><input value={hubForm.meeting_day} onChange={(e) => setHubForm({ ...hubForm, meeting_day: e.target.value })} className={inputCls} placeholder="Thursday" /></div>
-          <div><label className={labelCls}>Meeting Time</label><input value={hubForm.meeting_time} onChange={(e) => setHubForm({ ...hubForm, meeting_time: e.target.value })} className={inputCls} placeholder="6:30 PM" /></div>
+          <div><label className={labelCls}>{required("Name")}</label><input value={hubForm.name} onChange={(e) => setHubForm({ ...hubForm, name: e.target.value })} className={inputCls} required /></div>
+          <div><label className={labelCls}>{required("Campus or Neighborhood")}</label><input value={hubForm.campus} onChange={(e) => setHubForm({ ...hubForm, campus: e.target.value })} className={inputCls} placeholder="Campus" /></div>
+          <div><label className={labelCls}>{required("Neighborhood or Campus")}</label><input value={hubForm.neighborhood} onChange={(e) => setHubForm({ ...hubForm, neighborhood: e.target.value })} className={inputCls} placeholder="Neighborhood" /></div>
+          <div><label className={labelCls}>{optional("Coordinator Name")}</label><input value={hubForm.coordinator_name} onChange={(e) => setHubForm({ ...hubForm, coordinator_name: e.target.value })} className={inputCls} /></div>
+          <div><label className={labelCls}>{optional("Coordinator Contact")}</label><input value={hubForm.coordinator_contact} onChange={(e) => setHubForm({ ...hubForm, coordinator_contact: e.target.value })} className={inputCls} /></div>
+          <div><label className={labelCls}>{optional("WhatsApp Link")}</label><input value={hubForm.whatsapp_link} onChange={(e) => setHubForm({ ...hubForm, whatsapp_link: e.target.value })} className={inputCls} /></div>
+          <div><label className={labelCls}>{optional("Meeting Day")}</label><input value={hubForm.meeting_day} onChange={(e) => setHubForm({ ...hubForm, meeting_day: e.target.value })} className={inputCls} placeholder="Thursday" /></div>
+          <div><label className={labelCls}>{optional("Meeting Time")}</label><input value={hubForm.meeting_time} onChange={(e) => setHubForm({ ...hubForm, meeting_time: e.target.value })} className={inputCls} placeholder="6:30 PM" /></div>
           <div>
-            <label className={labelCls}>Hub Image</label>
+            <label className={labelCls}>{optional("Hub Image")}</label>
             <label className={`${inputCls} flex cursor-pointer items-center gap-2`}>
               <Upload className="h-4 w-4 text-saffron" />
               <span className="truncate">{hubImageFile?.name || "Upload image"}</span>
               <input type="file" accept="image/*" onChange={(e) => setHubImageFile(e.target.files?.[0] || null)} className="sr-only" />
             </label>
           </div>
-          <div><label className={labelCls}>Instagram Handle</label><input value={hubForm.instagram_handle} onChange={(e) => setHubForm({ ...hubForm, instagram_handle: e.target.value })} className={inputCls} placeholder="gitalife312" /></div>
-          <div className="sm:col-span-2"><label className={labelCls}>Description</label><textarea value={hubForm.description} onChange={(e) => setHubForm({ ...hubForm, description: e.target.value })} className={inputCls} rows={3} /></div>
+          <div><label className={labelCls}>{optional("Instagram Handle")}</label><input value={hubForm.instagram_handle} onChange={(e) => setHubForm({ ...hubForm, instagram_handle: e.target.value })} className={inputCls} placeholder="gitalife312" /></div>
+          <div className="sm:col-span-2"><label className={labelCls}>{optional("Description")}</label><textarea value={hubForm.description} onChange={(e) => setHubForm({ ...hubForm, description: e.target.value })} className={inputCls} rows={3} /></div>
         </div>
         <button type="submit" disabled={creatingHub} className="mt-4 flex items-center gap-2 rounded-xl bg-navy px-6 py-3 font-heading text-sm font-semibold text-white disabled:opacity-60">
           {creatingHub ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Create Hub
@@ -230,6 +241,7 @@ export default function AdminHubsAdmins() {
                 <p className="font-body text-xs text-navy/50">{hubLocation(h)}</p>
               </div>
               <div className="flex items-center gap-2">
+                <Link to={`/hubs/${h.id}`} target="_blank" className="flex items-center gap-1 rounded-lg bg-river/10 px-3 py-2 font-heading text-xs font-semibold text-river hover:bg-river/20"><ExternalLink className="h-3.5 w-3.5" />Preview</Link>
                 <Link to={`/admin/hub/${h.id}`} className="flex items-center gap-1 rounded-lg bg-navy/5 px-3 py-2 font-heading text-xs font-semibold text-navy hover:bg-navy/10"><Pencil className="h-3.5 w-3.5" />Edit</Link>
                 <button onClick={() => deleteHub(h.id)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20"><Trash2 className="h-4 w-4" /></button>
               </div>

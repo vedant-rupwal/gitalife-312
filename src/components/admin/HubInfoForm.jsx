@@ -4,6 +4,8 @@ import { Loader2, Check, Upload, Trash2 } from "lucide-react";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20 transition-all";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
+const required = (label) => `${label} (Required)`;
+const optional = (label) => `${label} (Optional)`;
 
 export default function HubInfoForm({ hubId }) {
   const [hub, setHub] = useState(null);
@@ -80,23 +82,23 @@ export default function HubInfoForm({ hubId }) {
     <form onSubmit={save} className="rounded-2xl bg-white border border-navy/8 p-6 space-y-4">
       <h3 className="font-heading text-lg font-bold text-navy">Hub Info</h3>
       {msg && <div className="rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 font-heading text-sm font-semibold text-destructive">{msg}</div>}
-      <div><label className={labelCls}>Name</label><input value={hub.name || ""} onChange={(e) => update("name", e.target.value)} className={inputCls} required /></div>
+      <div><label className={labelCls}>{required("Name")}</label><input value={hub.name || ""} onChange={(e) => update("name", e.target.value)} className={inputCls} required /></div>
       <div className="grid sm:grid-cols-2 gap-3">
-        <div><label className={labelCls}>Campus</label><input value={hub.campus || ""} onChange={(e) => update("campus", e.target.value)} className={inputCls} /></div>
-        <div><label className={labelCls}>Neighborhood</label><input value={hub.neighborhood || ""} onChange={(e) => update("neighborhood", e.target.value)} className={inputCls} /></div>
+        <div><label className={labelCls}>{required("Campus or Neighborhood")}</label><input value={hub.campus || ""} onChange={(e) => update("campus", e.target.value)} className={inputCls} placeholder="Campus" /></div>
+        <div><label className={labelCls}>{required("Neighborhood or Campus")}</label><input value={hub.neighborhood || ""} onChange={(e) => update("neighborhood", e.target.value)} className={inputCls} placeholder="Neighborhood" /></div>
       </div>
-      <div><label className={labelCls}>Description</label><textarea value={hub.description || ""} onChange={(e) => update("description", e.target.value)} className={inputCls} rows={3} /></div>
+      <div><label className={labelCls}>{optional("Description")}</label><textarea value={hub.description || ""} onChange={(e) => update("description", e.target.value)} className={inputCls} rows={3} /></div>
       <div className="grid sm:grid-cols-2 gap-3">
-        <div><label className={labelCls}>Coordinator</label><input value={hub.coordinator_name || ""} onChange={(e) => update("coordinator_name", e.target.value)} className={inputCls} /></div>
-        <div><label className={labelCls}>Contact</label><input value={hub.coordinator_contact || ""} onChange={(e) => update("coordinator_contact", e.target.value)} className={inputCls} /></div>
+        <div><label className={labelCls}>{optional("Coordinator")}</label><input value={hub.coordinator_name || ""} onChange={(e) => update("coordinator_name", e.target.value)} className={inputCls} /></div>
+        <div><label className={labelCls}>{optional("Contact")}</label><input value={hub.coordinator_contact || ""} onChange={(e) => update("coordinator_contact", e.target.value)} className={inputCls} /></div>
       </div>
       <div className="grid sm:grid-cols-2 gap-3">
-        <div><label className={labelCls}>Meeting Day</label><input value={hub.meeting_day || ""} onChange={(e) => update("meeting_day", e.target.value)} className={inputCls} /></div>
-        <div><label className={labelCls}>Meeting Time</label><input value={hub.meeting_time || ""} onChange={(e) => update("meeting_time", e.target.value)} className={inputCls} /></div>
+        <div><label className={labelCls}>{optional("Meeting Day")}</label><input value={hub.meeting_day || ""} onChange={(e) => update("meeting_day", e.target.value)} className={inputCls} /></div>
+        <div><label className={labelCls}>{optional("Meeting Time")}</label><input value={hub.meeting_time || ""} onChange={(e) => update("meeting_time", e.target.value)} className={inputCls} /></div>
       </div>
-      <div><label className={labelCls}>WhatsApp Link</label><input value={hub.whatsapp_link || ""} onChange={(e) => update("whatsapp_link", e.target.value)} className={inputCls} /></div>
+      <div><label className={labelCls}>{optional("WhatsApp Link")}</label><input value={hub.whatsapp_link || ""} onChange={(e) => update("whatsapp_link", e.target.value)} className={inputCls} /></div>
       <div className="space-y-3">
-        <label className={labelCls}>Hub Image</label>
+        <label className={labelCls}>{optional("Hub Image")}</label>
         {hub.image_url && (
           <div className="overflow-hidden rounded-xl border border-navy/10">
             <img src={hub.image_url} alt={hub.name} className="h-40 w-full object-cover" />

@@ -29,6 +29,8 @@ Run [supabase/schema.sql](./supabase/schema.sql) in the Supabase SQL editor. It 
 
 If you already ran the older schema, run [supabase/migrations/hub-location-and-image-upload.sql](./supabase/migrations/hub-location-and-image-upload.sql). It creates the public `hub-images` Storage bucket and enforces that each hub has either a campus or a neighborhood.
 
+Run [supabase/migrations/event-image-upload.sql](./supabase/migrations/event-image-upload.sql) to create the public `event-images` Storage bucket for event image uploads.
+
 Required Supabase project settings:
 
 - Enable Email auth.
@@ -39,6 +41,7 @@ Required Supabase project settings:
 - Add redirect URLs:
   - `http://localhost:5173/*`
   - `https://your-vercel-domain.vercel.app/*`
+- Set Auth OTP/link expiry to `300` seconds if you want reset-password links to expire after 5 minutes.
 
 The browser app uses only the Supabase anon key. Never expose the service-role key in Vercel client env vars.
 
