@@ -15,8 +15,6 @@ const blankHub = {
   meeting_day: "",
   meeting_time: "",
   description: "",
-  lat: "",
-  lng: "",
   instagram_handle: "",
 };
 
@@ -61,6 +59,11 @@ export default function AdminHubsAdmins() {
       const uploadedImageUrl = hubImageFile
         ? await appClient.storage.uploadHubImage(hubImageFile)
         : null;
+      const estimatedCoordinates = await appClient.locations.geocodeHub({
+        name: hubForm.name.trim(),
+        campus: optionalText(hubForm.campus),
+        neighborhood: optionalText(hubForm.neighborhood),
+      });
 
       await appClient.entities.Hub.create({
         name: hubForm.name.trim(),
@@ -73,8 +76,8 @@ export default function AdminHubsAdmins() {
         meeting_time: optionalText(hubForm.meeting_time),
         description: optionalText(hubForm.description),
         image_url: uploadedImageUrl,
-        lat: hubForm.lat === "" ? null : Number(hubForm.lat),
-        lng: hubForm.lng === "" ? null : Number(hubForm.lng),
+        lat: estimatedCoordinates?.lat ?? null,
+        lng: estimatedCoordinates?.lng ?? null,
         instagram_handle: optionalText(hubForm.instagram_handle),
       });
       setHubForm(blankHub);
@@ -141,8 +144,6 @@ export default function AdminHubsAdmins() {
           <div><label className={labelCls}>WhatsApp Link</label><input value={hubForm.whatsapp_link} onChange={(e) => setHubForm({ ...hubForm, whatsapp_link: e.target.value })} className={inputCls} /></div>
           <div><label className={labelCls}>Meeting Day</label><input value={hubForm.meeting_day} onChange={(e) => setHubForm({ ...hubForm, meeting_day: e.target.value })} className={inputCls} placeholder="Thursday" /></div>
           <div><label className={labelCls}>Meeting Time</label><input value={hubForm.meeting_time} onChange={(e) => setHubForm({ ...hubForm, meeting_time: e.target.value })} className={inputCls} placeholder="6:30 PM" /></div>
-          <div><label className={labelCls}>Latitude</label><input type="number" step="any" value={hubForm.lat} onChange={(e) => setHubForm({ ...hubForm, lat: e.target.value })} className={inputCls} /></div>
-          <div><label className={labelCls}>Longitude</label><input type="number" step="any" value={hubForm.lng} onChange={(e) => setHubForm({ ...hubForm, lng: e.target.value })} className={inputCls} /></div>
           <div>
             <label className={labelCls}>Hub Image</label>
             <label className={`${inputCls} flex cursor-pointer items-center gap-2`}>

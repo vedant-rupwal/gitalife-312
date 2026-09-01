@@ -47,6 +47,7 @@ const throwIfError = ({ error }) => {
 };
 
 const HUB_IMAGES_BUCKET = 'hub-images';
+const DEFAULT_GEOCODE_REGION = import.meta.env.VITE_GEOCODE_REGION || 'Chicago, IL, USA';
 
 const cleanFileName = (fileName = 'hub-image') => {
   const [name, ...rest] = fileName.split('.');
@@ -58,6 +59,16 @@ const cleanFileName = (fileName = 'hub-image') => {
     .slice(0, 60) || 'hub-image';
 
   return `${safeName}.${extension.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'}`;
+};
+
+const toCoordinate = (value) => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const buildHubGeocodeQuery = ({ campus, neighborhood, name } = {}) => {
+  const location = [campus, neighborhood].filter(Boolean).join(', ') || name;
+  return [location, DEFAULT_GEOCODE_REGION].filter(Boolean).join(', ');
 };
 
 const applyFilters = (query, filters = {}) => {
@@ -192,6 +203,37 @@ export const appClient = {
         .getPublicUrl(data.path);
 
       return publicUrlData.publicUrl;
+    },
+  },
+
+  locations: {
+    async geocodeHub(hub) {
+      const query = buildHubGeocodeQuery(hub);
+      if (!query) return null;
+
+      const searchParams = new URLSearchParams({
+        q: query,
+        format: 'jsonv2',
+        limit: '1',
+        countrycodes: 'us',
+      });
+
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?${searchParams.toString()}`, {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) return null;
+      const results = await response.json();
+      const bestMatch = Array.isArray(results) ? results[0] : null;
+      if (!bestMatch) return null;
+
+      const lat = toCoordinate(bestMatch.lat);
+      const lng = toCoordinate(bestMatch.lon);
+      if (lat === null || lng === null) return null;
+
+      return { lat, lng };
     },
   },
 

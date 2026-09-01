@@ -51,6 +51,7 @@ Use the normal Vercel Vite defaults:
 - Environment variables:
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
+  - `VITE_GEOCODE_REGION` optional, defaults to `Chicago, IL, USA` for estimating hub map coordinates from campus/neighborhood text
 
 `vercel.json` rewrites all routes to `index.html` so direct links such as `/hubs/:id`, `/login`, and `/reset-password` work.
 

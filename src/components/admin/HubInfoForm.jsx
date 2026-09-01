@@ -35,6 +35,16 @@ export default function HubInfoForm({ hubId }) {
       const uploadedImageUrl = imageFile
         ? await appClient.storage.uploadHubImage(imageFile)
         : hub.image_url || null;
+      const existingLat = Number(hub.lat);
+      const existingLng = Number(hub.lng);
+      const hasCoordinates = Number.isFinite(existingLat) && Number.isFinite(existingLng);
+      const estimatedCoordinates = hasCoordinates
+        ? null
+        : await appClient.locations.geocodeHub({
+          name: hub.name.trim(),
+          campus: optionalText(hub.campus),
+          neighborhood: optionalText(hub.neighborhood),
+        });
 
       const updatedHub = await appClient.entities.Hub.update(hubId, {
         name: hub.name.trim(),
@@ -47,8 +57,8 @@ export default function HubInfoForm({ hubId }) {
         meeting_time: optionalText(hub.meeting_time),
         whatsapp_link: optionalText(hub.whatsapp_link),
         image_url: uploadedImageUrl,
-        lat: hub.lat ?? null,
-        lng: hub.lng ?? null,
+        lat: hasCoordinates ? existingLat : estimatedCoordinates?.lat ?? null,
+        lng: hasCoordinates ? existingLng : estimatedCoordinates?.lng ?? null,
         instagram_handle: optionalText(hub.instagram_handle),
       });
 
