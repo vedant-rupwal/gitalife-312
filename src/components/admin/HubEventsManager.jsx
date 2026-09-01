@@ -2,12 +2,22 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Trash2, Loader2, Upload, ExternalLink } from "lucide-react";
 import { appClient } from "@/api/appClient";
+import { buildRecurringEventDates, createRecurrenceId, recurrenceOptions } from "@/lib/recurringEvents";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20 transition-all";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
 const required = (label) => `${label} (Required)`;
 const optional = (label) => `${label} (Optional)`;
-const blank = { title: "", description: "", type: "kirtan", location: "", event_date: "", capacity: 0 };
+const blank = {
+  title: "",
+  description: "",
+  type: "kirtan",
+  location: "",
+  event_date: "",
+  capacity: 0,
+  recurrence_frequency: "none",
+  recurrence_count: "4",
+};
 
 export default function HubEventsManager({ hubId }) {
   const draftKey = `gitalife.hub.${hubId}.eventDraft`;
@@ -45,19 +55,28 @@ export default function HubEventsManager({ hubId }) {
       const uploadedImageUrl = eventImageFile
         ? await appClient.storage.uploadEventImage(eventImageFile)
         : null;
+      const eventDates = buildRecurringEventDates(
+        form.event_date,
+        form.recurrence_frequency,
+        form.recurrence_count,
+      );
+      const recurrenceId = eventDates.length > 1 ? createRecurrenceId() : null;
 
-      await appClient.entities.CommunityEvent.create({
-        title: form.title.trim(),
-        description: optionalText(form.description),
-        type: form.type,
-        location: optionalText(form.location),
-        event_date: new Date(form.event_date).toISOString(),
-        image_url: uploadedImageUrl,
-        capacity: Number(form.capacity) || 0,
-        hub_id: hubId,
-        campus: hub?.campus || null,
-        signup_count: 0,
-      });
+      for (const eventDate of eventDates) {
+        await appClient.entities.CommunityEvent.create({
+          title: form.title.trim(),
+          description: optionalText(form.description),
+          type: form.type,
+          location: optionalText(form.location),
+          event_date: eventDate.toISOString(),
+          image_url: uploadedImageUrl,
+          capacity: Number(form.capacity) || 0,
+          hub_id: hubId,
+          campus: hub?.campus || null,
+          signup_count: 0,
+          recurrence_id: recurrenceId,
+        });
+      }
       setForm(blank);
       setEventImageFile(null);
       sessionStorage.removeItem(draftKey);
@@ -86,6 +105,12 @@ export default function HubEventsManager({ hubId }) {
             <div><label className={labelCls}>{required("Date & Time")}</label><input type="datetime-local" value={form.event_date} onChange={(e) => setForm({ ...form, event_date: e.target.value })} className={inputCls} required /></div>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
+            <div><label className={labelCls}>{optional("Repeat")}</label><select value={form.recurrence_frequency} onChange={(e) => setForm({ ...form, recurrence_frequency: e.target.value })} className={inputCls}>{recurrenceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+            {form.recurrence_frequency !== "none" && (
+              <div><label className={labelCls}>{required("Occurrences")}</label><input type="number" min="1" max="52" value={form.recurrence_count} onChange={(e) => setForm({ ...form, recurrence_count: e.target.value })} className={inputCls} required /></div>
+            )}
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
             <div><label className={labelCls}>{optional("Location")}</label><input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputCls} /></div>
             <div><label className={labelCls}>{optional("Capacity")}</label><input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} className={inputCls} min="0" /></div>
           </div>
@@ -105,7 +130,7 @@ export default function HubEventsManager({ hubId }) {
           <div key={ev.id} className="flex items-center justify-between gap-3 rounded-xl border border-navy/8 px-4 py-3">
             <div className="min-w-0">
               <p className="font-heading text-sm font-bold text-navy">{ev.title}</p>
-              <p className="font-body text-xs text-navy/50">{ev.location || "Location coming soon"} - {new Date(ev.event_date).toLocaleDateString()}</p>
+              <p className="font-body text-xs text-navy/50">{ev.location || "Location coming soon"} - {new Date(ev.event_date).toLocaleDateString()}{ev.recurrence_id ? " - Recurring" : ""}</p>
             </div>
             <button onClick={() => del(ev.id)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20"><Trash2 className="h-4 w-4" /></button>
           </div>
