@@ -15,6 +15,26 @@ const pickDailyVerse = (verses) => {
   return pool[seed % pool.length];
 };
 
+const decodeHtml = (value) => {
+  if (typeof document === "undefined") return value;
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = value;
+  return textarea.value;
+};
+
+const cleanVerseText = (value = "") =>
+  decodeHtml(String(value))
+    .replace(/class="[^"]*"\s*>/gi, "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const formatDevanagari = (value) =>
+  cleanVerseText(value)
+    .replace(/\s*।\s*/g, " ।\n")
+    .replace(/\s*॥\s*/g, " ॥\n")
+    .trim();
+
 export default function VerseOfTheDay({ embedded = false }) {
   const [verse, setVerse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,29 +66,38 @@ export default function VerseOfTheDay({ embedded = false }) {
 
   if (!verse) return null;
 
+  const sanskrit = formatDevanagari(verse.sanskrit);
+  const transliteration = cleanVerseText(verse.transliteration);
+  const translation = cleanVerseText(verse.translation);
+
   const content = (
-    <div className={embedded ? "" : "mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center"}>
-      <div className={embedded ? "flex items-center gap-2 mb-6" : "inline-flex items-center gap-2 rounded-full border border-saffron/30 bg-saffron/10 px-4 py-1.5 mb-10"}>
+    <div className={embedded ? "" : "mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-left"}>
+      <div className="flex items-center gap-2 mb-8">
         <BookOpen className="h-4 w-4 text-saffron" />
-        <span className="font-heading text-xs font-semibold text-saffron tracking-wide uppercase">Verse of the Day - BG {verse.chapter}.{verse.verse_number}</span>
+        <span className="font-heading text-sm font-semibold text-saffron tracking-wide uppercase">
+          Verse of the Day - BG {verse.chapter}.{verse.verse_number}
+        </span>
       </div>
 
       <div className="verse-blur transition-all duration-500">
-        <p className="font-display text-2xl sm:text-3xl lg:text-4xl font-medium text-white/95 leading-relaxed italic">
-          {verse.sanskrit}
+        <p className="font-display whitespace-pre-line text-3xl sm:text-4xl lg:text-5xl font-medium text-white/95 leading-tight">
+          {sanskrit}
         </p>
-        {verse.transliteration && (
-          <p className="mt-6 font-body text-base sm:text-lg text-saffron/90 leading-relaxed max-w-2xl mx-auto">
-            {verse.transliteration}
+        {transliteration && (
+          <p className="mt-8 max-w-4xl font-body text-xl sm:text-2xl text-saffron leading-relaxed italic">
+            {transliteration}
           </p>
         )}
-        <div className="my-8 flex items-center justify-center gap-3">
+        <div className="my-10 flex items-center gap-3">
           <div className="h-px w-12 bg-saffron/40" />
           <div className="h-2 w-2 rounded-full bg-saffron" />
           <div className="h-px w-12 bg-saffron/40" />
         </div>
-        <p className="font-display text-lg sm:text-xl text-white/80 leading-relaxed max-w-2xl mx-auto">
-          {verse.translation}
+        <h3 className="font-heading text-2xl sm:text-3xl font-bold text-white mb-5">
+          Translation
+        </h3>
+        <p className="max-w-4xl font-display text-xl sm:text-2xl text-white/90 leading-relaxed">
+          {translation}
         </p>
       </div>
     </div>
