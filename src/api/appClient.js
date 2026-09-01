@@ -350,5 +350,31 @@ export const appClient = {
 
       return payload;
     },
+
+    async deleteUser(userId) {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      throwIfError({ error: sessionError });
+
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        throw new Error('You must be logged in as an admin to delete users.');
+      }
+
+      const response = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Delete failed.');
+      }
+
+      return payload;
+    },
   },
 };

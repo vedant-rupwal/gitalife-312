@@ -115,6 +115,22 @@ export default function AdminHubsAdmins() {
     } catch (err) { setMsg(err.message || "Update failed."); setTimeout(() => setMsg(""), 4000); }
   };
 
+  const deleteAdminUser = async (user) => {
+    if (!confirm(`Delete ${user.email || "this hub admin"}?`)) return;
+    setSaving(true);
+    setMsg("");
+    try {
+      await appClient.users.deleteUser(user.id);
+      setMsg("Hub admin deleted.");
+      await load();
+    } catch (err) {
+      setMsg(err.message || "Delete failed.");
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMsg(""), 4000);
+    }
+  };
+
   const deleteHub = async (id) => {
     if (!confirm("Delete this hub?")) return;
     await appClient.entities.Hub.delete(id);
@@ -183,10 +199,21 @@ export default function AdminHubsAdmins() {
                 <p className="font-body text-sm font-medium text-navy truncate">{u.email}</p>
                 <p className="font-body text-xs text-navy/50">{userHub(u) ? `Assigned: ${hubName(userHub(u))}` : "Unassigned"}</p>
               </div>
-              <select value={userHub(u) || ""} onChange={(e) => reassign(u.id, e.target.value)} className="rounded-lg border border-navy/15 px-3 py-2 font-body text-xs text-navy">
-                <option value="">Unassigned</option>
-                {hubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-              </select>
+              <div className="flex items-center gap-2">
+                <select value={userHub(u) || ""} onChange={(e) => reassign(u.id, e.target.value)} className="rounded-lg border border-navy/15 px-3 py-2 font-body text-xs text-navy">
+                  <option value="">Unassigned</option>
+                  {hubs.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+                </select>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => deleteAdminUser(u)}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 disabled:opacity-60"
+                  aria-label={`Delete ${u.email}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ))}
           {users.filter((u) => u.role !== "admin").length === 0 && <p className="font-body text-sm text-navy/50">No hub admins yet. Invite one above.</p>}

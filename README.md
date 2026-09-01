@@ -68,7 +68,7 @@ set role = 'admin'
 where email = 'you@example.com';
 ```
 
-Inviting hub admins uses the Vercel `/api/invite-user` route. Set `SUPABASE_SERVICE_ROLE_KEY` in Vercel before using the invite form.
+Inviting and deleting hub admins uses the Vercel `/api/invite-user` and `/api/delete-user` routes. Set `SUPABASE_SERVICE_ROLE_KEY` in Vercel before using those admin actions.
 
 ## Import Gita Verses
 
