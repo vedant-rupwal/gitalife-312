@@ -12,6 +12,11 @@ const saffronIcon = L.divIcon({
   tooltipAnchor: [0, -30],
 });
 
+const chicagoBounds = [
+  [41.60, -88.05],
+  [42.12, -87.40],
+];
+
 export default function ChicagoMap({ hubs, height = 480, compact = false, onPinClick }) {
   const navigate = useNavigate();
   const pins = hubs.filter((h) => Number.isFinite(Number(h.lat)) && Number.isFinite(Number(h.lng)));
@@ -21,6 +26,10 @@ export default function ChicagoMap({ hubs, height = 480, compact = false, onPinC
       <MapContainer
         center={[41.8781, -87.6298]}
         zoom={compact ? 10 : 11}
+        minZoom={compact ? 9 : 10}
+        maxZoom={16}
+        maxBounds={chicagoBounds}
+        maxBoundsViscosity={0.85}
         scrollWheelZoom={!compact}
         dragging={!compact}
         doubleClickZoom={!compact}
