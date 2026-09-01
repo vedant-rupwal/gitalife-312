@@ -23,10 +23,9 @@ export default async function handler(req, res) {
   }
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+  if (!supabaseUrl || !serviceRoleKey) {
     return json(res, 500, { error: 'Supabase server env vars are not configured.' });
   }
 
@@ -43,16 +42,13 @@ export default async function handler(req, res) {
     return json(res, 400, { error: 'Invalid role.' });
   }
 
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
   const serviceClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
   });
 
-  const { data: authData, error: authError } = await userClient.auth.getUser();
+  const { data: authData, error: authError } = await serviceClient.auth.getUser(accessToken);
   if (authError || !authData.user) {
-    return json(res, 401, { error: 'Invalid admin session.' });
+    return json(res, 401, { error: authError?.message || 'Invalid admin session.' });
   }
 
   const { data: adminProfile, error: profileError } = await serviceClient

@@ -177,6 +177,20 @@ const redirectTo = (path = '/') => {
   return target.href;
 };
 
+const getAccessToken = async () => {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  throwIfError({ error: sessionError });
+
+  const expiresAt = sessionData.session?.expires_at;
+  if (expiresAt && expiresAt * 1000 < Date.now() + 60_000) {
+    const { data: refreshedData, error: refreshError } = await supabase.auth.refreshSession();
+    throwIfError({ error: refreshError });
+    return refreshedData.session?.access_token;
+  }
+
+  return sessionData.session?.access_token;
+};
+
 export const appClient = {
   supabase,
 
@@ -326,10 +340,7 @@ export const appClient = {
 
   users: {
     async inviteUser(email, role = 'user', values = {}) {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      throwIfError({ error: sessionError });
-
-      const accessToken = sessionData.session?.access_token;
+      const accessToken = await getAccessToken();
       if (!accessToken) {
         throw new Error('You must be logged in as an admin to invite users.');
       }
@@ -352,10 +363,7 @@ export const appClient = {
     },
 
     async deleteUser(userId) {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      throwIfError({ error: sessionError });
-
-      const accessToken = sessionData.session?.access_token;
+      const accessToken = await getAccessToken();
       if (!accessToken) {
         throw new Error('You must be logged in as an admin to delete users.');
       }
