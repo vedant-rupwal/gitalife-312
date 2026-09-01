@@ -1,0 +1,81 @@
+import React, { useState, useEffect } from "react";
+import { appClient } from "@/api/appClient";
+import EventCard from "@/components/events/EventCard";
+import EventSignupModal from "@/components/events/EventSignupModal";
+import SectionHeading from "@/components/ui/SectionHeading";
+import { cn } from "@/lib/utils";
+
+const types = ["All", "kirtan", "bhajan", "seva", "retreat", "study_circle", "immersion"];
+const typeLabels = {
+  All: "All Events",
+  kirtan: "Kirtan",
+  bhajan: "Bhajan Nights",
+  seva: "Seva",
+  retreat: "Retreats",
+  study_circle: "Study Circles",
+  immersion: "Immersions",
+};
+
+export default function Events() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("All");
+  const [signupEvent, setSignupEvent] = useState(null);
+
+  useEffect(() => {
+    appClient.entities.CommunityEvent.list("event_date", 50)
+      .then(setEvents)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = filter === "All" ? events : events.filter((e) => e.type === filter);
+
+  return (
+    <div className="bg-cream min-h-screen">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+        <SectionHeading
+          eyebrow="WindyCity Calendar"
+          title="Events & Seva"
+          subtitle="Kirtans by the lake, bhajan nights in the Loop, food relief in Pilsen, and retreats across the Midwest. Find your next gathering."
+        />
+
+        <div className="flex flex-wrap gap-2 mb-10">
+          {types.map((t) => (
+            <button
+              key={t}
+              onClick={() => setFilter(t)}
+              className={cn(
+                "rounded-full px-4 py-2 font-heading text-sm font-medium transition-all",
+                filter === t
+                  ? "bg-saffron text-white"
+                  : "bg-white text-navy/60 border border-navy/8 hover:bg-navy/5"
+              )}
+            >
+              {typeLabels[t]}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-80 bg-white animate-pulse rounded-2xl" />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="font-body text-navy/50">No events in this category right now. Check back soon!</p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map((ev) => (
+              <EventCard key={ev.id} event={ev} onSignup={setSignupEvent} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {signupEvent && <EventSignupModal event={signupEvent} onClose={() => setSignupEvent(null)} />}
+    </div>
+  );
+}

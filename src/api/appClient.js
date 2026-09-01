@@ -1,0 +1,250 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const resolvedSupabaseUrl = supabaseUrl || 'https://example.supabase.co';
+const resolvedSupabaseAnonKey = supabaseAnonKey || 'missing-anon-key';
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Supabase calls will fail until these are configured.');
+}
+
+export const supabase = createClient(resolvedSupabaseUrl, resolvedSupabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});
+
+const tableNames = {
+  CommunityEvent: 'community_events',
+  EventSignup: 'event_signups',
+  Hub: 'hubs',
+  ImpactStat: 'impact_stats',
+  JapaLog: 'japa_logs',
+  User: 'profiles',
+  Verse: 'verses',
+};
+
+const orderFieldAliases = {
+  created_date: 'created_at',
+};
+
+const normalizeRow = (row) => {
+  if (!row || typeof row !== 'object') return row;
+  return {
+    ...row,
+    created_date: row.created_date || row.created_at,
+    updated_date: row.updated_date || row.updated_at,
+  };
+};
+
+const normalizeRows = (rows) => (Array.isArray(rows) ? rows.map(normalizeRow) : rows);
+
+const throwIfError = ({ error }) => {
+  if (error) throw error;
+};
+
+const applyFilters = (query, filters = {}) => {
+  return Object.entries(filters).reduce((nextQuery, [key, value]) => {
+    if (Array.isArray(value)) return nextQuery.in(key, value);
+    if (value === null) return nextQuery.is(key, null);
+    return nextQuery.eq(key, value);
+  }, query);
+};
+
+const applyOrder = (query, order) => {
+  if (!order) return query;
+  const descending = order.startsWith('-');
+  const field = descending ? order.slice(1) : order;
+  return query.order(orderFieldAliases[field] || field, { ascending: !descending });
+};
+
+const applyLimit = (query, limit) => {
+  return limit ? query.limit(limit) : query;
+};
+
+const createEntity = (entityName) => {
+  const tableName = tableNames[entityName];
+
+  if (!tableName) {
+    throw new Error(`No Supabase table configured for ${entityName}.`);
+  }
+
+  return {
+    async list(order, limit) {
+      let query = supabase.from(tableName).select('*');
+      query = applyOrder(query, order);
+      query = applyLimit(query, limit);
+      const { data, error } = await query;
+      throwIfError({ error });
+      return normalizeRows(data || []);
+    },
+
+    async filter(filters = {}, order, limit) {
+      let query = supabase.from(tableName).select('*');
+      query = applyFilters(query, filters);
+      query = applyOrder(query, order);
+      query = applyLimit(query, limit);
+      const { data, error } = await query;
+      throwIfError({ error });
+      return normalizeRows(data || []);
+    },
+
+    async get(id) {
+      const { data, error } = await supabase.from(tableName).select('*').eq('id', id).single();
+      throwIfError({ error });
+      return normalizeRow(data);
+    },
+
+    async create(values) {
+      const { data, error } = await supabase.from(tableName).insert(values).select('*').single();
+      throwIfError({ error });
+      return normalizeRow(data);
+    },
+
+    async update(id, values) {
+      const { data, error } = await supabase.from(tableName).update(values).eq('id', id).select('*').single();
+      throwIfError({ error });
+      return normalizeRow(data);
+    },
+
+    async updateMany(filters = {}, updateSpec = {}) {
+      const values = updateSpec.$set || updateSpec;
+      let query = supabase.from(tableName).update(values);
+      query = applyFilters(query, filters);
+      const { data, error } = await query.select('*');
+      throwIfError({ error });
+      return normalizeRows(data || []);
+    },
+
+    async delete(id) {
+      const { error } = await supabase.from(tableName).delete().eq('id', id);
+      throwIfError({ error });
+      return true;
+    },
+  };
+};
+
+const toAppUser = async (authUser) => {
+  if (!authUser) return null;
+
+  const { data: profile, error } = await supabase
+    .from(tableNames.User)
+    .select('*')
+    .eq('id', authUser.id)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return normalizeRow({
+    id: authUser.id,
+    email: authUser.email,
+    role: 'user',
+    ...(profile || {}),
+    data: profile || {},
+  });
+};
+
+const redirectTo = (path = '/') => {
+  const target = new URL(path || '/', window.location.origin);
+  return target.href;
+};
+
+export const appClient = {
+  supabase,
+
+  entities: Object.fromEntries(
+    Object.keys(tableNames).map((entityName) => [entityName, createEntity(entityName)]),
+  ),
+
+  auth: {
+    async me() {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (!data.user) throw new Error('Not authenticated');
+      return toAppUser(data.user);
+    },
+
+    async loginViaEmailPassword(email, password) {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      throwIfError({ error });
+      return this.me();
+    },
+
+    async register({ email, password }) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectTo('/'),
+        },
+      });
+      throwIfError({ error });
+      return data;
+    },
+
+    async verifyOtp({ email, otpCode }) {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'signup',
+      });
+      throwIfError({ error });
+      return data.session || data;
+    },
+
+    async resendOtp(email) {
+      const { data, error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+      });
+      throwIfError({ error });
+      return data;
+    },
+
+    async loginWithProvider(provider, returnTo = '/') {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: redirectTo(returnTo),
+        },
+      });
+      throwIfError({ error });
+    },
+
+    async resetPasswordRequest(email) {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectTo('/reset-password'),
+      });
+      throwIfError({ error });
+      return data;
+    },
+
+    async resetPassword({ newPassword }) {
+      const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+      throwIfError({ error });
+      return data;
+    },
+
+    async logout(returnTo) {
+      await supabase.auth.signOut();
+      if (returnTo) window.location.href = returnTo;
+    },
+
+    redirectToLogin(returnTo = '/') {
+      window.location.href = `/login?returnTo=${encodeURIComponent(returnTo)}`;
+    },
+
+    setToken(_token) {
+      // Supabase manages the browser session when verifyOtp or OAuth succeeds.
+    },
+  },
+
+  users: {
+    async inviteUser(_email, _role) {
+      throw new Error('Inviting users requires a Supabase Edge Function or server route with the service-role key.');
+    },
+  },
+};
