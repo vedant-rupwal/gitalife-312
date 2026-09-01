@@ -25,25 +25,39 @@ export const createRecurrenceId = () => {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
 
-export const buildRecurringEventDates = (startDateValue, frequency, countValue) => {
+const getNextDate = (startDate, frequency, index) => {
+  const nextDate = new Date(startDate);
+
+  if (frequency === "weekly") {
+    nextDate.setDate(startDate.getDate() + index * 7);
+  }
+
+  if (frequency === "biweekly") {
+    nextDate.setDate(startDate.getDate() + index * 14);
+  }
+
+  if (frequency === "monthly") {
+    return addMonths(startDate, index);
+  }
+
+  return nextDate;
+};
+
+export const buildRecurringEventDates = (startDateValue, frequency, endDateValue) => {
   const startDate = new Date(startDateValue);
-  const count = frequency === "none" ? 1 : Math.min(Math.max(Number(countValue) || 1, 1), 52);
+  if (frequency === "none") return [startDate];
 
-  return Array.from({ length: count }, (_, index) => {
-    const nextDate = new Date(startDate);
+  const endDate = new Date(endDateValue);
+  if (!endDateValue || Number.isNaN(endDate.getTime()) || endDate < startDate) {
+    throw new Error("Repeat until date must be after the first event date.");
+  }
 
-    if (frequency === "weekly") {
-      nextDate.setDate(startDate.getDate() + index * 7);
-    }
+  const dates = [];
+  for (let index = 0; index < 52; index += 1) {
+    const nextDate = getNextDate(startDate, frequency, index);
+    if (nextDate > endDate) break;
+    dates.push(nextDate);
+  }
 
-    if (frequency === "biweekly") {
-      nextDate.setDate(startDate.getDate() + index * 14);
-    }
-
-    if (frequency === "monthly") {
-      return addMonths(startDate, index);
-    }
-
-    return nextDate;
-  });
+  return dates.length ? dates : [startDate];
 };

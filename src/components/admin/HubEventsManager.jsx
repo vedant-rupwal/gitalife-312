@@ -16,7 +16,7 @@ const blank = {
   event_date: "",
   capacity: 0,
   recurrence_frequency: "none",
-  recurrence_count: "4",
+  recurrence_until: "",
 };
 
 export default function HubEventsManager({ hubId }) {
@@ -58,7 +58,7 @@ export default function HubEventsManager({ hubId }) {
       const eventDates = buildRecurringEventDates(
         form.event_date,
         form.recurrence_frequency,
-        form.recurrence_count,
+        form.recurrence_until,
       );
       const recurrenceId = eventDates.length > 1 ? createRecurrenceId() : null;
 
@@ -107,7 +107,7 @@ export default function HubEventsManager({ hubId }) {
           <div className="grid sm:grid-cols-2 gap-3">
             <div><label className={labelCls}>{optional("Repeat")}</label><select value={form.recurrence_frequency} onChange={(e) => setForm({ ...form, recurrence_frequency: e.target.value })} className={inputCls}>{recurrenceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
             {form.recurrence_frequency !== "none" && (
-              <div><label className={labelCls}>{required("Occurrences")}</label><input type="number" min="1" max="52" value={form.recurrence_count} onChange={(e) => setForm({ ...form, recurrence_count: e.target.value })} className={inputCls} required /></div>
+              <div><label className={labelCls}>{required("Repeat Until")}</label><input type="datetime-local" value={form.recurrence_until} onChange={(e) => setForm({ ...form, recurrence_until: e.target.value })} className={inputCls} required /></div>
             )}
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
