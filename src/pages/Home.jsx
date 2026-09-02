@@ -1,28 +1,81 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { appClient } from "@/api/appClient";
 import Hero from "@/components/home/Hero";
-import ImpactCounter from "@/components/home/ImpactCounter";
 import SocialGrid from "@/components/home/SocialGrid";
-import ChicagoMap from "@/components/hubs/ChicagoMap";
 import EventCard from "@/components/events/EventCard";
 import EventSignupModal from "@/components/events/EventSignupModal";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
-import { defaultHubs } from "@/data/defaultHubs";
+import { ArrowRight, BookOpen, Camera, HandHeart, MapPin, Mountain, Music, Trophy, Utensils } from "lucide-react";
+
+const involvementItems = [
+  {
+    title: "Gita Classes",
+    description: "Weekly study circles across Chicago campuses",
+    icon: BookOpen,
+    to: "/hubs",
+    color: "bg-gold",
+  },
+  {
+    title: "Kirtan & Harinam",
+    description: "Holy names in homes, campuses, and city spaces",
+    icon: Music,
+    to: "/events",
+    color: "bg-saffron",
+  },
+  {
+    title: "Book Distribution",
+    description: "Share timeless wisdom with students and neighbors",
+    icon: HandHeart,
+    to: "/events",
+    color: "bg-river",
+  },
+  {
+    title: "Retreats",
+    description: "Weekend immersions for reflection and friendship",
+    icon: Mountain,
+    to: "/events",
+    color: "bg-rose",
+  },
+  {
+    title: "Govinda's Kitchen",
+    description: "Sanctified vegetarian meals and community seva",
+    icon: Utensils,
+    to: "/events",
+    color: "bg-saffron",
+  },
+  {
+    title: "Find a Hub",
+    description: "Connect with your campus or neighborhood circle",
+    icon: MapPin,
+    to: "/hubs",
+    color: "bg-navy",
+  },
+  {
+    title: "Photo Gallery",
+    description: "Moments from the GitaLife community",
+    icon: Camera,
+    to: "/",
+    color: "bg-rose",
+  },
+  {
+    title: "Our Impact",
+    description: "Book marathons, festivals, meals, and milestones",
+    icon: Trophy,
+    to: "/events",
+    color: "bg-gold",
+  },
+];
 
 export default function Home() {
   const [events, setEvents] = useState([]);
-  const [hubs, setHubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [signupEvent, setSignupEvent] = useState(null);
 
   useEffect(() => {
-    Promise.all([
-      appClient.entities.CommunityEvent.list("event_date", 3).catch(() => []),
-      appClient.entities.Hub.list().catch(() => []),
-    ])
-      .then(([e, h]) => { setEvents(e); setHubs(h.length ? h : defaultHubs); })
+    appClient.entities.CommunityEvent.list("event_date", 3)
+      .then(setEvents)
+      .catch(() => setEvents([]))
       .finally(() => setLoading(false));
   }, []);
 
@@ -30,45 +83,41 @@ export default function Home() {
     <div>
       <Hero />
 
-      {/* Hubs & Initiatives — mini map */}
-      <section className="py-20 lg:py-28 bg-cream">
+      <section className="py-20 lg:py-28 bg-cream grain">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            eyebrow="WindyCity Hubs & Initiatives"
-            title="Find Your People, Find Your Practice"
-            subtitle="Campus circles, lakefront kirtans, bhajan nights, nature immersions, and food relief seva — all across Chicagoland. Tap a pin to find your hub."
+            eyebrow="Explore"
+            title="How to get involved"
+            subtitle="Daily practice, weekly classes, seva opportunities, and more"
+            align="center"
           />
-          <ChicagoMap hubs={hubs} height={360} compact />
-          <div className="mt-6 text-center">
-            <Link
-              to="/hubs"
-              className="inline-flex items-center gap-2 rounded-xl bg-navy px-7 py-4 font-heading text-base font-semibold text-white transition-all hover:scale-[1.02]"
-            >
-              Explore All Hubs <ArrowRight className="h-5 w-5" />
-            </Link>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {involvementItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.title}
+                  to={item.to}
+                  className="group rounded-lg border border-navy/10 bg-white/45 p-6 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-saffron/30 hover:bg-white/70 hover:shadow-lg"
+                >
+                  <span className={`mb-5 flex h-14 w-14 items-center justify-center rounded-lg ${item.color} text-white shadow-lg transition-transform group-hover:scale-105`}>
+                    <Icon className="h-6 w-6" />
+                  </span>
+                  <h3 className="font-heading text-lg font-bold text-navy">{item.title}</h3>
+                  <p className="mt-2 font-body text-sm leading-relaxed text-navy/60">{item.description}</p>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Impact Counter */}
-      <section className="py-20 lg:py-28 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            eyebrow="Live Impact"
-            title="Seva in Action"
-            subtitle="Real numbers from real service. This is what collective devotion looks like on the ground."
-          />
-          <ImpactCounter />
-        </div>
-      </section>
-
-      {/* Upcoming Events Preview */}
       <section className="py-20 lg:py-28 bg-cream">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
             eyebrow="Upcoming Gatherings"
             title="Join Us This Week"
-            subtitle="Kirtans, seva, retreats, and study circles — there's always a seat for you."
+            subtitle="Kirtans, seva, retreats, and study circles - there's always a seat for you."
           />
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {loading
@@ -86,7 +135,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Social Grid */}
       <section className="py-20 lg:py-28 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
