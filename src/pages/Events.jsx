@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { appClient } from "@/api/appClient";
 import EventCard from "@/components/events/EventCard";
 import EventSignupModal from "@/components/events/EventSignupModal";
@@ -7,9 +8,9 @@ import { cn } from "@/lib/utils";
 import { buildEventTypes, formatEventType } from "@/lib/eventTypes";
 
 export default function Events() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("All");
   const [signupEvent, setSignupEvent] = useState(null);
 
   useEffect(() => {
@@ -19,7 +20,16 @@ export default function Events() {
   }, []);
 
   const types = buildEventTypes(events);
+  const requestedFilter = searchParams.get("type") || "All";
+  const filter = requestedFilter === "All" || types.includes(requestedFilter) ? requestedFilter : "All";
   const filtered = filter === "All" ? events : events.filter((e) => e.type === filter);
+  const updateFilter = (type) => {
+    if (type === "All") {
+      setSearchParams({});
+    } else {
+      setSearchParams({ type });
+    }
+  };
 
   return (
     <div className="bg-cream min-h-screen">
@@ -34,7 +44,7 @@ export default function Events() {
           {types.map((t) => (
             <button
               key={t}
-              onClick={() => setFilter(t)}
+              onClick={() => updateFilter(t)}
               className={cn(
                 "rounded-full px-4 py-2 font-heading text-sm font-medium transition-all",
                 filter === t

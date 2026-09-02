@@ -20,15 +20,15 @@ const involvementItems = [
     title: "Kirtan & Harinam",
     description: "Holy names in homes, campuses, and city spaces",
     icon: Music,
-    to: "/events",
+    to: "/events?type=kirtan",
     color: "bg-saffron",
   },
   {
     title: "Retreats",
     description: "Weekend immersions for reflection and friendship",
     icon: Mountain,
-    to: "/events",
-    color: "bg-rose",
+    to: "/events?type=retreat",
+    color: "bg-river",
   },
   {
     title: "Find a Hub",
@@ -42,7 +42,7 @@ const involvementItems = [
     description: "Moments from the GitaLife community",
     icon: Camera,
     to: "/gallery",
-    color: "bg-rose",
+    color: "bg-navy",
   },
   {
     title: "Our Impact",
