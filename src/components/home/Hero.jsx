@@ -18,9 +18,11 @@ export default function Hero() {
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-36">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-saffron/20 bg-saffron/5 px-4 py-1.5 mb-8 float-up">
+          <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-saffron/20 bg-saffron/5 px-4 py-1.5 mb-8 float-up">
             <MapPin className="h-3.5 w-3.5 text-saffron" />
-            <span className="font-heading text-xs font-semibold text-saffron tracking-wide uppercase">Chicago · UIC · DePaul · Northwestern · UChicago</span>
+            <span className="font-heading text-xs font-semibold text-saffron tracking-wide uppercase leading-relaxed">
+              Chicago · UIC · DePaul · IIT · Loyola · Northwestern · UChicago
+            </span>
           </div>
 
           <h1 className="font-heading text-5xl sm:text-7xl lg:text-8xl font-bold text-navy leading-[0.95] tracking-tight float-up" style={{ animationDelay: "0.1s" }}>
