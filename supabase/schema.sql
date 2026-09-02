@@ -59,6 +59,7 @@ create table if not exists public.community_events (
   title text not null,
   description text,
   type text not null default 'kirtan' check (type in ('kirtan', 'bhajan', 'seva', 'retreat', 'study_circle', 'immersion')),
+  tags text[] not null default '{}',
   location text,
   campus text,
   hub_id uuid references public.hubs(id) on delete set null,

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { appClient } from "@/api/appClient";
 import { Trash2, Loader2, Plus, Check, Upload, ExternalLink } from "lucide-react";
 import { buildRecurringEventDates, createRecurrenceId, recurrenceOptions } from "@/lib/recurringEvents";
+import EventTagsInput from "@/components/admin/EventTagsInput";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20 transition-all";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
@@ -19,6 +20,7 @@ const blankEvent = {
   coordinator: "",
   whatsapp_link: "",
   capacity: "",
+  tags: [],
   recurrence_frequency: "none",
   recurrence_until: "",
 };
@@ -83,6 +85,7 @@ export default function AdminEvents() {
           coordinator: optionalText(form.coordinator),
           whatsapp_link: optionalText(form.whatsapp_link),
           capacity: Number(form.capacity) || 0,
+          tags: form.tags,
           signup_count: 0,
           recurrence_id: recurrenceId,
         });
@@ -132,6 +135,9 @@ export default function AdminEvents() {
           <div><label className={labelCls}>{optional("Capacity")}</label><input type="number" min="0" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} className={inputCls} /></div>
           <div><label className={labelCls}>{optional("Coordinator")}</label><input value={form.coordinator} onChange={(e) => setForm({ ...form, coordinator: e.target.value })} className={inputCls} /></div>
           <div><label className={labelCls}>{optional("WhatsApp Link")}</label><input value={form.whatsapp_link} onChange={(e) => setForm({ ...form, whatsapp_link: e.target.value })} className={inputCls} /></div>
+          <div className="sm:col-span-2">
+            <EventTagsInput tags={form.tags || []} onChange={(tags) => setForm({ ...form, tags })} />
+          </div>
           <div className="sm:col-span-2">
             <label className={labelCls}>{optional("Event Image")}</label>
             <label className={`${inputCls} flex cursor-pointer items-center gap-2`}>

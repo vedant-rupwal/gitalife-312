@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Plus, Trash2, Loader2, Upload, ExternalLink } from "lucide-react";
 import { appClient } from "@/api/appClient";
 import { buildRecurringEventDates, createRecurrenceId, recurrenceOptions } from "@/lib/recurringEvents";
+import EventTagsInput from "@/components/admin/EventTagsInput";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20 transition-all";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
@@ -15,6 +16,7 @@ const blank = {
   location: "",
   event_date: "",
   capacity: 0,
+  tags: [],
   recurrence_frequency: "none",
   recurrence_until: "",
 };
@@ -71,6 +73,7 @@ export default function HubEventsManager({ hubId }) {
           event_date: eventDate.toISOString(),
           image_url: uploadedImageUrl,
           capacity: Number(form.capacity) || 0,
+          tags: form.tags,
           hub_id: hubId,
           campus: hub?.campus || null,
           signup_count: 0,
@@ -114,6 +117,7 @@ export default function HubEventsManager({ hubId }) {
             <div><label className={labelCls}>{optional("Location")}</label><input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputCls} /></div>
             <div><label className={labelCls}>{optional("Capacity")}</label><input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} className={inputCls} min="0" /></div>
           </div>
+          <EventTagsInput tags={form.tags || []} onChange={(tags) => setForm({ ...form, tags })} />
           <div>
             <label className={labelCls}>{optional("Event Image")}</label>
             <label className={`${inputCls} flex cursor-pointer items-center gap-2`}>

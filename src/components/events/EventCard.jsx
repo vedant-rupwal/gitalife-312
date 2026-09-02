@@ -27,6 +27,7 @@ export default function EventCard({ event, onSignup }) {
   const month = date.toLocaleString("en-US", { month: "short" }).toUpperCase();
   const time = date.toLocaleString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
   const full = event.capacity && event.signup_count >= event.capacity;
+  const tags = Array.isArray(event.tags) ? event.tags.filter(Boolean) : [];
 
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-navy/8 bg-white transition-all hover:shadow-xl hover:shadow-navy/5 hover:-translate-y-1">
@@ -55,6 +56,15 @@ export default function EventCard({ event, onSignup }) {
 
       <div className="p-5">
         <h3 className="font-heading text-lg font-bold text-navy mb-2">{event.title}</h3>
+        {tags.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {tags.map((tag) => (
+              <span key={tag} className="rounded-full bg-saffron/10 px-2.5 py-1 font-heading text-[11px] font-semibold text-saffron">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
         <p className="font-body text-sm text-navy/60 mb-4 line-clamp-2">{event.description}</p>
 
         <div className="space-y-2 mb-4">
