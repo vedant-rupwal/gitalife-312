@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { appClient } from "@/api/appClient";
-import { Trash2, Loader2, Plus, Check, Upload, ExternalLink } from "lucide-react";
+import { Trash2, Loader2, Plus, Check, Upload, ExternalLink, Pencil, X } from "lucide-react";
 import { buildRecurringEventDates, createRecurrenceId, recurrenceOptions } from "@/lib/recurringEvents";
 import EventTagsInput from "@/components/admin/EventTagsInput";
 import { defaultEventTypes, formatEventType, normalizeEventType } from "@/lib/eventTypes";
@@ -26,6 +26,29 @@ const blankEvent = {
   recurrence_until: "",
 };
 
+const toDatetimeLocal = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
+};
+
+const eventToForm = (event) => ({
+  title: event.title || "",
+  description: event.description || "",
+  type: event.type || "kirtan",
+  location: event.location || "",
+  hub_id: event.hub_id || "",
+  event_date: toDatetimeLocal(event.event_date),
+  coordinator: event.coordinator || "",
+  whatsapp_link: event.whatsapp_link || "",
+  capacity: event.capacity || "",
+  tags: Array.isArray(event.tags) ? event.tags : [],
+  recurrence_frequency: "none",
+  recurrence_until: "",
+});
+
 export default function AdminEvents() {
   const [events, setEvents] = useState([]);
   const [hubs, setHubs] = useState([]);
@@ -38,6 +61,7 @@ export default function AdminEvents() {
     }
   });
   const [eventImageFile, setEventImageFile] = useState(null);
+  const [editingEventId, setEditingEventId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -54,18 +78,57 @@ export default function AdminEvents() {
   useEffect(() => { load().catch(() => setLoading(false)); }, []);
   useEffect(() => { sessionStorage.setItem(draftKey, JSON.stringify(form)); }, [form]);
 
-  const create = async (e) => {
+  const resetForm = () => {
+    setForm(blankEvent);
+    setEventImageFile(null);
+    setEditingEventId(null);
+    sessionStorage.removeItem(draftKey);
+  };
+
+  const edit = (event) => {
+    setForm(eventToForm(event));
+    setEventImageFile(null);
+    setEditingEventId(event.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const save = async (e) => {
     e.preventDefault();
     setSaving(true);
     setMsg("");
 
     const hub = hubs.find((item) => item.id === form.hub_id);
+    const editingEvent = events.find((event) => event.id === editingEventId);
 
     try {
-      const optionalText = (value) => value.trim() || null;
+      const optionalText = (value = "") => String(value).trim() || null;
       const uploadedImageUrl = eventImageFile
         ? await appClient.storage.uploadEventImage(eventImageFile)
         : null;
+
+      const eventValues = {
+        title: form.title.trim(),
+        description: optionalText(form.description),
+        type: normalizeEventType(form.type) || "event",
+        location: optionalText(form.location),
+        hub_id: form.hub_id || null,
+        campus: hub?.campus || null,
+        event_date: new Date(form.event_date).toISOString(),
+        image_url: uploadedImageUrl || editingEvent?.image_url || null,
+        coordinator: optionalText(form.coordinator),
+        whatsapp_link: optionalText(form.whatsapp_link),
+        capacity: Number(form.capacity) || 0,
+        tags: form.tags || [],
+      };
+
+      if (editingEventId) {
+        await appClient.entities.CommunityEvent.update(editingEventId, eventValues);
+        resetForm();
+        setMsg("Event updated.");
+        await load();
+        return;
+      }
+
       const eventDates = buildRecurringEventDates(
         form.event_date,
         form.recurrence_frequency,
@@ -75,25 +138,13 @@ export default function AdminEvents() {
 
       for (const eventDate of eventDates) {
         await appClient.entities.CommunityEvent.create({
-          title: form.title.trim(),
-          description: optionalText(form.description),
-          type: normalizeEventType(form.type) || "event",
-          location: optionalText(form.location),
-          hub_id: form.hub_id || null,
-          campus: hub?.campus || null,
+          ...eventValues,
           event_date: eventDate.toISOString(),
-          image_url: uploadedImageUrl,
-          coordinator: optionalText(form.coordinator),
-          whatsapp_link: optionalText(form.whatsapp_link),
-          capacity: Number(form.capacity) || 0,
-          tags: form.tags,
           signup_count: 0,
           recurrence_id: recurrenceId,
         });
       }
-      setForm(blankEvent);
-      setEventImageFile(null);
-      sessionStorage.removeItem(draftKey);
+      resetForm();
       setMsg(eventDates.length > 1 ? `${eventDates.length} events created.` : "Event created.");
       await load();
     } catch (err) {
@@ -116,12 +167,22 @@ export default function AdminEvents() {
     <div className="space-y-8">
       {msg && <div className="flex items-center gap-2 rounded-xl bg-river/10 border border-river/20 px-4 py-3 font-heading text-sm font-semibold text-river"><Check className="h-4 w-4" />{msg}</div>}
 
-      <form onSubmit={create} className="rounded-2xl bg-white border border-navy/8 p-6">
+      <form onSubmit={save} className="rounded-2xl bg-white border border-navy/8 p-6">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="font-heading text-lg font-bold text-navy flex items-center gap-2"><Plus className="h-5 w-5 text-saffron" />Create Event</h3>
-          <Link to="/events" target="_blank" className="inline-flex items-center gap-2 rounded-lg bg-navy/5 px-3 py-2 font-heading text-xs font-semibold text-navy hover:bg-navy/10">
-            <ExternalLink className="h-3.5 w-3.5" />View Public Events
-          </Link>
+          <h3 className="font-heading text-lg font-bold text-navy flex items-center gap-2">
+            {editingEventId ? <Pencil className="h-5 w-5 text-saffron" /> : <Plus className="h-5 w-5 text-saffron" />}
+            {editingEventId ? "Edit Event" : "Create Event"}
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {editingEventId && (
+              <button type="button" onClick={resetForm} className="inline-flex items-center gap-2 rounded-lg bg-navy/5 px-3 py-2 font-heading text-xs font-semibold text-navy hover:bg-navy/10">
+                <X className="h-3.5 w-3.5" />Cancel Edit
+              </button>
+            )}
+            <Link to="/events" target="_blank" className="inline-flex items-center gap-2 rounded-lg bg-navy/5 px-3 py-2 font-heading text-xs font-semibold text-navy hover:bg-navy/10">
+              <ExternalLink className="h-3.5 w-3.5" />View Public Events
+            </Link>
+          </div>
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div><label className={labelCls}>{required("Title")}</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} required /></div>
@@ -142,9 +203,13 @@ export default function AdminEvents() {
             </datalist>
           </div>
           <div><label className={labelCls}>{required("Date & Time")}</label><input type="datetime-local" value={form.event_date} onChange={(e) => setForm({ ...form, event_date: e.target.value })} className={inputCls} required /></div>
-          <div><label className={labelCls}>{optional("Repeat")}</label><select value={form.recurrence_frequency} onChange={(e) => setForm({ ...form, recurrence_frequency: e.target.value })} className={inputCls}>{recurrenceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
-          {form.recurrence_frequency !== "none" && (
-            <div><label className={labelCls}>{required("Repeat Until")}</label><input type="datetime-local" value={form.recurrence_until} onChange={(e) => setForm({ ...form, recurrence_until: e.target.value })} className={inputCls} required /></div>
+          {!editingEventId && (
+            <>
+              <div><label className={labelCls}>{optional("Repeat")}</label><select value={form.recurrence_frequency} onChange={(e) => setForm({ ...form, recurrence_frequency: e.target.value })} className={inputCls}>{recurrenceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+              {form.recurrence_frequency !== "none" && (
+                <div><label className={labelCls}>{required("Repeat Until")}</label><input type="datetime-local" value={form.recurrence_until} onChange={(e) => setForm({ ...form, recurrence_until: e.target.value })} className={inputCls} required /></div>
+              )}
+            </>
           )}
           <div><label className={labelCls}>{optional("Location")}</label><input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputCls} /></div>
           <div><label className={labelCls}>{optional("Capacity")}</label><input type="number" min="0" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} className={inputCls} /></div>
@@ -157,14 +222,15 @@ export default function AdminEvents() {
             <label className={labelCls}>{optional("Event Image")}</label>
             <label className={`${inputCls} flex cursor-pointer items-center gap-2`}>
               <Upload className="h-4 w-4 text-saffron" />
-              <span className="truncate">{eventImageFile?.name || "Upload image"}</span>
+              <span className="truncate">{eventImageFile?.name || (editingEventId ? "Upload replacement image" : "Upload image")}</span>
               <input type="file" accept="image/*" onChange={(e) => setEventImageFile(e.target.files?.[0] || null)} className="sr-only" />
             </label>
           </div>
           <div className="sm:col-span-2"><label className={labelCls}>{optional("Description")}</label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputCls} rows={3} /></div>
         </div>
         <button type="submit" disabled={saving} className="mt-4 flex items-center gap-2 rounded-xl bg-navy px-6 py-3 font-heading text-sm font-semibold text-white disabled:opacity-60">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Create Event
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingEventId ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          {editingEventId ? "Update Event" : "Create Event"}
         </button>
       </form>
 
@@ -177,7 +243,10 @@ export default function AdminEvents() {
                 <p className="font-heading text-sm font-bold text-navy">{ev.title}</p>
                 <p className="font-body text-xs text-navy/50">{ev.location || "Location coming soon"} - {new Date(ev.event_date).toLocaleDateString()}{ev.recurrence_id ? " - Recurring" : ""}</p>
               </div>
-              <button onClick={() => del(ev.id)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20"><Trash2 className="h-4 w-4" /></button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button onClick={() => edit(ev)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy/5 text-navy hover:bg-navy/10" aria-label={`Edit ${ev.title}`}><Pencil className="h-4 w-4" /></button>
+                <button onClick={() => del(ev.id)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20" aria-label={`Delete ${ev.title}`}><Trash2 className="h-4 w-4" /></button>
+              </div>
             </div>
           ))}
           {events.length === 0 && <p className="font-body text-sm text-navy/50">No events yet.</p>}
