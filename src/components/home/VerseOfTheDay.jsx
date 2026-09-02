@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { appClient } from "@/api/appClient";
 import { BookOpen } from "lucide-react";
+import { cleanVerseText, formatDevanagari } from "@/lib/verseText";
 
 const pickDailyVerse = (verses) => {
   if (!verses.length) return null;
@@ -14,26 +15,6 @@ const pickDailyVerse = (verses) => {
   const seed = today.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return pool[seed % pool.length];
 };
-
-const decodeHtml = (value) => {
-  if (typeof document === "undefined") return value;
-  const textarea = document.createElement("textarea");
-  textarea.innerHTML = value;
-  return textarea.value;
-};
-
-const cleanVerseText = (value = "") =>
-  decodeHtml(String(value))
-    .replace(/class="[^"]*"\s*>/gi, "")
-    .replace(/<[^>]*>/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-const formatDevanagari = (value) =>
-  cleanVerseText(value)
-    .replace(/\s*।\s*/g, " ।\n")
-    .replace(/\s*॥\s*/g, " ॥\n")
-    .trim();
 
 export default function VerseOfTheDay({ embedded = false }) {
   const [verse, setVerse] = useState(null);

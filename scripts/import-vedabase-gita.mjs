@@ -37,17 +37,22 @@ const decodeHtml = (value = '') => {
 };
 
 const stripTags = (html = '') => decodeHtml(html)
+  .replace(/class=(?:"|')?av-(?:devanagari|verse_text|translation|synonyms|purport)(?:"|')?\s*>?/gi, '')
   .replace(/<br\s*\/?>/gi, '\n')
   .replace(/<\/(p|div|h\d)>/gi, '\n')
+  .replace(/<\s*\/?\s*div[^>]*>/gi, ' ')
   .replace(/<[^>]*>/g, '')
+  .replace(/\u00a0/g, ' ')
   .replace(/\r/g, '')
   .replace(/[ \t]+\n/g, '\n')
   .replace(/\n{3,}/g, '\n\n')
   .trim();
 
 const extractSection = (html, className, nextClassName) => {
-  const start = html.indexOf(`class="av-${className}"`);
-  if (start === -1) return '';
+  const markerStart = html.indexOf(`class="av-${className}"`);
+  if (markerStart === -1) return '';
+  const tagStart = html.lastIndexOf('<div', markerStart);
+  const start = tagStart === -1 ? markerStart : tagStart;
 
   const end = nextClassName
     ? html.indexOf(`class="av-${nextClassName}"`, start)
