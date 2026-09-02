@@ -9,11 +9,11 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid gap-12 md:grid-cols-4">
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <BrandLogo className="h-11 w-11 border border-white/20" />
+            <div className="flex items-center gap-3 mb-4">
+              <BrandLogo className="h-14 w-14 border border-white/20" />
               <div className="flex items-baseline gap-1.5 leading-none">
-                <span className="font-heading text-lg font-bold">GitaLife</span>
-                <span className="font-heading text-lg font-bold text-saffron">312</span>
+                <span className="font-heading text-2xl font-bold">GitaLife</span>
+                <span className="font-heading text-2xl font-bold text-saffron">312</span>
               </div>
             </div>
             <p className="font-display text-2xl text-white/90 leading-snug max-w-md">
