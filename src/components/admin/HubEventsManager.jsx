@@ -4,6 +4,7 @@ import { Plus, Trash2, Loader2, Upload, ExternalLink } from "lucide-react";
 import { appClient } from "@/api/appClient";
 import { buildRecurringEventDates, createRecurrenceId, recurrenceOptions } from "@/lib/recurringEvents";
 import EventTagsInput from "@/components/admin/EventTagsInput";
+import { defaultEventTypes, formatEventType, normalizeEventType } from "@/lib/eventTypes";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20 transition-all";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
@@ -68,7 +69,7 @@ export default function HubEventsManager({ hubId }) {
         await appClient.entities.CommunityEvent.create({
           title: form.title.trim(),
           description: optionalText(form.description),
-          type: form.type,
+          type: normalizeEventType(form.type) || "event",
           location: optionalText(form.location),
           event_date: eventDate.toISOString(),
           image_url: uploadedImageUrl,
@@ -104,7 +105,21 @@ export default function HubEventsManager({ hubId }) {
           <div><label className={labelCls}>{required("Title")}</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} required /></div>
           <div><label className={labelCls}>{optional("Description")}</label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputCls} rows={2} /></div>
           <div className="grid sm:grid-cols-2 gap-3">
-            <div><label className={labelCls}>{required("Type")}</label><select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputCls}><option value="kirtan">Kirtan</option><option value="bhajan">Bhajan</option><option value="seva">Seva</option><option value="retreat">Retreat</option><option value="study_circle">Study Circle</option><option value="immersion">Immersion</option></select></div>
+            <div>
+              <label className={labelCls}>{required("Type")}</label>
+              <input
+                list="hub-event-type-options"
+                value={form.type}
+                onChange={(e) => setForm({ ...form, type: e.target.value })}
+                onBlur={(e) => setForm({ ...form, type: normalizeEventType(e.target.value) || "event" })}
+                className={inputCls}
+                placeholder="kirtan, yoga, college_night"
+                required
+              />
+              <datalist id="hub-event-type-options">
+                {defaultEventTypes.map((type) => <option key={type} value={type}>{formatEventType(type)}</option>)}
+              </datalist>
+            </div>
             <div><label className={labelCls}>{required("Date & Time")}</label><input type="datetime-local" value={form.event_date} onChange={(e) => setForm({ ...form, event_date: e.target.value })} className={inputCls} required /></div>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">

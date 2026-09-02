@@ -4,17 +4,7 @@ import EventCard from "@/components/events/EventCard";
 import EventSignupModal from "@/components/events/EventSignupModal";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { cn } from "@/lib/utils";
-
-const types = ["All", "kirtan", "bhajan", "seva", "retreat", "study_circle", "immersion"];
-const typeLabels = {
-  All: "All Events",
-  kirtan: "Kirtan",
-  bhajan: "Bhajan Nights",
-  seva: "Seva",
-  retreat: "Retreats",
-  study_circle: "Study Circles",
-  immersion: "Immersions",
-};
+import { buildEventTypes, formatEventType } from "@/lib/eventTypes";
 
 export default function Events() {
   const [events, setEvents] = useState([]);
@@ -28,6 +18,7 @@ export default function Events() {
       .finally(() => setLoading(false));
   }, []);
 
+  const types = buildEventTypes(events);
   const filtered = filter === "All" ? events : events.filter((e) => e.type === filter);
 
   return (
@@ -51,7 +42,7 @@ export default function Events() {
                   : "bg-white text-navy/60 border border-navy/8 hover:bg-navy/5"
               )}
             >
-              {typeLabels[t]}
+              {t === "All" ? "All Events" : formatEventType(t)}
             </button>
           ))}
         </div>

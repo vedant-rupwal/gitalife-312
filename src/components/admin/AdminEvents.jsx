@@ -4,6 +4,7 @@ import { appClient } from "@/api/appClient";
 import { Trash2, Loader2, Plus, Check, Upload, ExternalLink } from "lucide-react";
 import { buildRecurringEventDates, createRecurrenceId, recurrenceOptions } from "@/lib/recurringEvents";
 import EventTagsInput from "@/components/admin/EventTagsInput";
+import { defaultEventTypes, formatEventType, normalizeEventType } from "@/lib/eventTypes";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20 transition-all";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
@@ -76,7 +77,7 @@ export default function AdminEvents() {
         await appClient.entities.CommunityEvent.create({
           title: form.title.trim(),
           description: optionalText(form.description),
-          type: form.type,
+          type: normalizeEventType(form.type) || "event",
           location: optionalText(form.location),
           hub_id: form.hub_id || null,
           campus: hub?.campus || null,
@@ -125,7 +126,21 @@ export default function AdminEvents() {
         <div className="grid sm:grid-cols-2 gap-4">
           <div><label className={labelCls}>{required("Title")}</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} required /></div>
           <div><label className={labelCls}>{optional("Hub")}</label><select value={form.hub_id} onChange={(e) => setForm({ ...form, hub_id: e.target.value })} className={inputCls}><option value="">No hub</option>{hubs.map((hub) => <option key={hub.id} value={hub.id}>{hub.name}</option>)}</select></div>
-          <div><label className={labelCls}>{required("Type")}</label><select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputCls}><option value="kirtan">Kirtan</option><option value="bhajan">Bhajan</option><option value="seva">Seva</option><option value="retreat">Retreat</option><option value="study_circle">Study Circle</option><option value="immersion">Immersion</option></select></div>
+          <div>
+            <label className={labelCls}>{required("Type")}</label>
+            <input
+              list="root-event-type-options"
+              value={form.type}
+              onChange={(e) => setForm({ ...form, type: e.target.value })}
+              onBlur={(e) => setForm({ ...form, type: normalizeEventType(e.target.value) || "event" })}
+              className={inputCls}
+              placeholder="kirtan, yoga, college_night"
+              required
+            />
+            <datalist id="root-event-type-options">
+              {defaultEventTypes.map((type) => <option key={type} value={type}>{formatEventType(type)}</option>)}
+            </datalist>
+          </div>
           <div><label className={labelCls}>{required("Date & Time")}</label><input type="datetime-local" value={form.event_date} onChange={(e) => setForm({ ...form, event_date: e.target.value })} className={inputCls} required /></div>
           <div><label className={labelCls}>{optional("Repeat")}</label><select value={form.recurrence_frequency} onChange={(e) => setForm({ ...form, recurrence_frequency: e.target.value })} className={inputCls}>{recurrenceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
           {form.recurrence_frequency !== "none" && (

@@ -58,7 +58,7 @@ create table if not exists public.community_events (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   description text,
-  type text not null default 'kirtan' check (type in ('kirtan', 'bhajan', 'seva', 'retreat', 'study_circle', 'immersion')),
+  type text not null default 'kirtan',
   tags text[] not null default '{}',
   location text,
   campus text,

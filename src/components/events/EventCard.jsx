@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { MapPin, Clock, Users, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatEventType } from "@/lib/eventTypes";
 
 const typeColors = {
   kirtan: "bg-saffron/10 text-saffron",
@@ -9,15 +10,6 @@ const typeColors = {
   retreat: "bg-navy/10 text-navy",
   study_circle: "bg-saffron/10 text-saffron",
   immersion: "bg-river/10 text-river",
-};
-
-const typeLabels = {
-  kirtan: "Kirtan",
-  bhajan: "Bhajan Night",
-  seva: "Seva",
-  retreat: "Retreat",
-  study_circle: "Study Circle",
-  immersion: "Immersion",
 };
 
 export default function EventCard({ event, onSignup }) {
@@ -49,7 +41,7 @@ export default function EventCard({ event, onSignup }) {
         </div>
         <div className="absolute top-3 right-3">
           <span className={cn("rounded-full px-3 py-1 font-heading text-xs font-semibold", typeColors[event.type] || "bg-navy/10 text-navy")}>
-            {typeLabels[event.type] || event.type}
+            {formatEventType(event.type)}
           </span>
         </div>
       </div>
