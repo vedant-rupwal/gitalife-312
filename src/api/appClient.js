@@ -25,6 +25,8 @@ const tableNames = {
   JapaLog: 'japa_logs',
   User: 'profiles',
   Verse: 'verses',
+  VolunteerOpportunity: 'volunteer_opportunities',
+  VolunteerSignup: 'volunteer_signups',
 };
 
 const orderFieldAliases = {

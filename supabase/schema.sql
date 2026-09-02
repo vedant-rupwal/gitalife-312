@@ -69,6 +69,7 @@ create table if not exists public.community_events (
   whatsapp_link text,
   capacity numeric,
   signup_count numeric not null default 0,
+  needs_volunteers boolean not null default false,
   recurrence_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -81,6 +82,33 @@ create table if not exists public.event_signups (
   name text not null,
   email text not null,
   phone text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.volunteer_opportunities (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid references public.community_events(id) on delete set null,
+  title text not null,
+  description text,
+  role_details text,
+  location text,
+  starts_at timestamptz,
+  needed_count numeric,
+  signup_count numeric not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.volunteer_signups (
+  id uuid primary key default gen_random_uuid(),
+  opportunity_id uuid not null references public.volunteer_opportunities(id) on delete cascade,
+  opportunity_title text,
+  name text not null,
+  email text not null,
+  phone text not null,
+  note text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -214,6 +242,20 @@ begin
 end;
 $$;
 
+create or replace function public.increment_volunteer_signup_count()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.volunteer_opportunities
+  set signup_count = coalesce(signup_count, 0) + 1
+  where id = new.opportunity_id;
+  return new;
+end;
+$$;
+
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users
@@ -223,6 +265,11 @@ drop trigger if exists event_signups_increment_count on public.event_signups;
 create trigger event_signups_increment_count
 after insert on public.event_signups
 for each row execute function public.increment_event_signup_count();
+
+drop trigger if exists volunteer_signups_increment_count on public.volunteer_signups;
+create trigger volunteer_signups_increment_count
+after insert on public.volunteer_signups
+for each row execute function public.increment_volunteer_signup_count();
 
 do $$
 declare
@@ -235,7 +282,9 @@ begin
     'event_signups',
     'impact_stats',
     'japa_logs',
-    'verses'
+    'verses',
+    'volunteer_opportunities',
+    'volunteer_signups'
   ]
   loop
     execute format('drop trigger if exists touch_%I_updated_at on public.%I', table_name, table_name);
@@ -250,13 +299,15 @@ alter table public.event_signups enable row level security;
 alter table public.impact_stats enable row level security;
 alter table public.japa_logs enable row level security;
 alter table public.verses enable row level security;
+alter table public.volunteer_opportunities enable row level security;
+alter table public.volunteer_signups enable row level security;
 
 grant usage on schema public to anon, authenticated;
-grant select on public.hubs, public.community_events, public.impact_stats, public.verses to anon, authenticated;
-grant insert on public.event_signups to anon, authenticated;
+grant select on public.hubs, public.community_events, public.impact_stats, public.verses, public.volunteer_opportunities to anon, authenticated;
+grant insert on public.event_signups, public.volunteer_signups to anon, authenticated;
 grant select, insert, update, delete on public.japa_logs to authenticated;
 grant select on public.profiles to authenticated;
-grant select, insert, update, delete on public.hubs, public.community_events, public.event_signups, public.impact_stats, public.verses to authenticated;
+grant select, insert, update, delete on public.hubs, public.community_events, public.event_signups, public.impact_stats, public.verses, public.volunteer_opportunities, public.volunteer_signups to authenticated;
 grant update on public.profiles to authenticated;
 
 drop policy if exists "Profiles are visible to self and admins" on public.profiles;
@@ -326,6 +377,49 @@ using (
     select 1
     from public.community_events e
     where e.id = event_id and public.can_manage_hub(e.hub_id)
+  )
+);
+
+drop policy if exists "Volunteer opportunities are public" on public.volunteer_opportunities;
+create policy "Volunteer opportunities are public"
+on public.volunteer_opportunities for select
+using (is_active = true or public.is_admin());
+
+drop policy if exists "Admins manage volunteer opportunities" on public.volunteer_opportunities;
+create policy "Admins manage volunteer opportunities"
+on public.volunteer_opportunities for all
+using (
+  public.is_admin()
+  or exists (
+    select 1
+    from public.community_events e
+    where e.id = event_id and public.can_manage_hub(e.hub_id)
+  )
+)
+with check (
+  public.is_admin()
+  or exists (
+    select 1
+    from public.community_events e
+    where e.id = event_id and public.can_manage_hub(e.hub_id)
+  )
+);
+
+drop policy if exists "Volunteer signups are public to create" on public.volunteer_signups;
+create policy "Volunteer signups are public to create"
+on public.volunteer_signups for insert
+with check (true);
+
+drop policy if exists "Admins can read volunteer signups" on public.volunteer_signups;
+create policy "Admins can read volunteer signups"
+on public.volunteer_signups for select
+using (
+  public.is_admin()
+  or exists (
+    select 1
+    from public.volunteer_opportunities o
+    left join public.community_events e on e.id = o.event_id
+    where o.id = opportunity_id and public.can_manage_hub(e.hub_id)
   )
 );
 

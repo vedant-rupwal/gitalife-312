@@ -4,6 +4,8 @@ import { appClient } from "@/api/appClient";
 import { Trash2, Loader2, Plus, Check, Upload, ExternalLink, Pencil, X } from "lucide-react";
 import { buildRecurringEventDates, createRecurrenceId, recurrenceOptions } from "@/lib/recurringEvents";
 import EventTagsInput from "@/components/admin/EventTagsInput";
+import EventSignupsPanel from "@/components/admin/EventSignupsPanel";
+import VolunteerOpportunityQuickForm from "@/components/admin/VolunteerOpportunityQuickForm";
 import { defaultEventTypes, formatEventType, normalizeEventType } from "@/lib/eventTypes";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20 transition-all";
@@ -22,6 +24,7 @@ const blankEvent = {
   whatsapp_link: "",
   capacity: "",
   tags: [],
+  needs_volunteers: false,
   recurrence_frequency: "none",
   recurrence_until: "",
 };
@@ -45,6 +48,7 @@ const eventToForm = (event) => ({
   whatsapp_link: event.whatsapp_link || "",
   capacity: event.capacity || "",
   tags: Array.isArray(event.tags) ? event.tags : [],
+  needs_volunteers: Boolean(event.needs_volunteers),
   recurrence_frequency: "none",
   recurrence_until: "",
 });
@@ -62,6 +66,8 @@ export default function AdminEvents() {
   });
   const [eventImageFile, setEventImageFile] = useState(null);
   const [editingEventId, setEditingEventId] = useState(null);
+  const [selectedSignupEvent, setSelectedSignupEvent] = useState(null);
+  const [pendingVolunteerEvent, setPendingVolunteerEvent] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -119,6 +125,7 @@ export default function AdminEvents() {
         whatsapp_link: optionalText(form.whatsapp_link),
         capacity: Number(form.capacity) || 0,
         tags: form.tags || [],
+        needs_volunteers: Boolean(form.needs_volunteers),
       };
 
       if (editingEventId) {
@@ -136,16 +143,19 @@ export default function AdminEvents() {
       );
       const recurrenceId = eventDates.length > 1 ? createRecurrenceId() : null;
 
+      let firstCreatedEvent = null;
       for (const eventDate of eventDates) {
-        await appClient.entities.CommunityEvent.create({
+        const createdEvent = await appClient.entities.CommunityEvent.create({
           ...eventValues,
           event_date: eventDate.toISOString(),
           signup_count: 0,
           recurrence_id: recurrenceId,
         });
+        firstCreatedEvent = firstCreatedEvent || createdEvent;
       }
       resetForm();
       setMsg(eventDates.length > 1 ? `${eventDates.length} events created.` : "Event created.");
+      if (form.needs_volunteers) setPendingVolunteerEvent(firstCreatedEvent);
       await load();
     } catch (err) {
       setMsg(err.message || "Event create failed.");
@@ -213,6 +223,10 @@ export default function AdminEvents() {
           )}
           <div><label className={labelCls}>{optional("Location")}</label><input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputCls} /></div>
           <div><label className={labelCls}>{optional("Capacity")}</label><input type="number" min="0" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} className={inputCls} /></div>
+          <label className="flex items-center gap-2 self-end rounded-xl border border-navy/10 px-4 py-3 font-heading text-sm font-semibold text-navy">
+            <input type="checkbox" checked={form.needs_volunteers} onChange={(e) => setForm({ ...form, needs_volunteers: e.target.checked })} />
+            Needs volunteers?
+          </label>
           <div><label className={labelCls}>{optional("Coordinator")}</label><input value={form.coordinator} onChange={(e) => setForm({ ...form, coordinator: e.target.value })} className={inputCls} /></div>
           <div><label className={labelCls}>{optional("WhatsApp Link")}</label><input value={form.whatsapp_link} onChange={(e) => setForm({ ...form, whatsapp_link: e.target.value })} className={inputCls} /></div>
           <div className="sm:col-span-2">
@@ -234,6 +248,18 @@ export default function AdminEvents() {
         </button>
       </form>
 
+      {pendingVolunteerEvent && (
+        <div className="rounded-2xl border border-saffron/20 bg-saffron/5 p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="font-heading text-sm font-bold text-navy">Add volunteer info for {pendingVolunteerEvent.title}</p>
+            <button onClick={() => setPendingVolunteerEvent(null)} className="rounded-lg bg-white px-3 py-2 font-heading text-xs font-semibold text-navy">Skip</button>
+          </div>
+          <VolunteerOpportunityQuickForm event={pendingVolunteerEvent} onCreated={() => setPendingVolunteerEvent(null)} />
+        </div>
+      )}
+
+      {selectedSignupEvent && <EventSignupsPanel event={selectedSignupEvent} onClose={() => setSelectedSignupEvent(null)} />}
+
       <div className="rounded-2xl bg-white border border-navy/8 p-6">
         <h3 className="font-heading text-lg font-bold text-navy mb-4">All Events ({events.length})</h3>
         <div className="space-y-2">
@@ -244,6 +270,7 @@ export default function AdminEvents() {
                 <p className="font-body text-xs text-navy/50">{ev.location || "Location coming soon"} - {new Date(ev.event_date).toLocaleDateString()}{ev.recurrence_id ? " - Recurring" : ""}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
+                <button onClick={() => setSelectedSignupEvent(ev)} className="rounded-lg bg-saffron/10 px-3 py-2 font-heading text-xs font-semibold text-saffron hover:bg-saffron/20">Signups</button>
                 <button onClick={() => edit(ev)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy/5 text-navy hover:bg-navy/10" aria-label={`Edit ${ev.title}`}><Pencil className="h-4 w-4" /></button>
                 <button onClick={() => del(ev.id)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20" aria-label={`Delete ${ev.title}`}><Trash2 className="h-4 w-4" /></button>
               </div>

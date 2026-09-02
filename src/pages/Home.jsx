@@ -6,14 +6,14 @@ import SocialGrid from "@/components/home/SocialGrid";
 import EventCard from "@/components/events/EventCard";
 import EventSignupModal from "@/components/events/EventSignupModal";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { ArrowRight, BookOpen, Camera, HandHeart, MapPin, Mountain, Music, Trophy, Utensils } from "lucide-react";
+import { ArrowRight, Camera, HandHeart, MapPin, Mountain, Music, Trophy } from "lucide-react";
 
 const involvementItems = [
   {
-    title: "Gita Classes",
-    description: "Weekly study circles across Chicago campuses",
-    icon: BookOpen,
-    to: "/hubs",
+    title: "Volunteering",
+    description: "Serve at events, outreach tables, meals, and festivals",
+    icon: HandHeart,
+    to: "/volunteer",
     color: "bg-gold",
   },
   {
@@ -24,25 +24,11 @@ const involvementItems = [
     color: "bg-saffron",
   },
   {
-    title: "Book Distribution",
-    description: "Share timeless wisdom with students and neighbors",
-    icon: HandHeart,
-    to: "/events",
-    color: "bg-river",
-  },
-  {
     title: "Retreats",
     description: "Weekend immersions for reflection and friendship",
     icon: Mountain,
     to: "/events",
     color: "bg-rose",
-  },
-  {
-    title: "Govinda's Kitchen",
-    description: "Sanctified vegetarian meals and community seva",
-    icon: Utensils,
-    to: "/events",
-    color: "bg-saffron",
   },
   {
     title: "Find a Hub",
@@ -55,14 +41,14 @@ const involvementItems = [
     title: "Photo Gallery",
     description: "Moments from the GitaLife community",
     icon: Camera,
-    to: "/",
+    to: "/gallery",
     color: "bg-rose",
   },
   {
     title: "Our Impact",
     description: "Book marathons, festivals, meals, and milestones",
     icon: Trophy,
-    to: "/events",
+    to: "/impact",
     color: "bg-gold",
   },
 ];

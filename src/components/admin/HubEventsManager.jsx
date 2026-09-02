@@ -5,6 +5,8 @@ import { appClient } from "@/api/appClient";
 import { buildRecurringEventDates, createRecurrenceId, recurrenceOptions } from "@/lib/recurringEvents";
 import EventTagsInput from "@/components/admin/EventTagsInput";
 import { defaultEventTypes, formatEventType, normalizeEventType } from "@/lib/eventTypes";
+import EventSignupsPanel from "@/components/admin/EventSignupsPanel";
+import VolunteerOpportunityQuickForm from "@/components/admin/VolunteerOpportunityQuickForm";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20 transition-all";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
@@ -18,6 +20,7 @@ const blank = {
   event_date: "",
   capacity: 0,
   tags: [],
+  needs_volunteers: false,
   recurrence_frequency: "none",
   recurrence_until: "",
 };
@@ -38,6 +41,7 @@ const eventToForm = (event) => ({
   event_date: toDatetimeLocal(event.event_date),
   capacity: event.capacity || "",
   tags: Array.isArray(event.tags) ? event.tags : [],
+  needs_volunteers: Boolean(event.needs_volunteers),
   recurrence_frequency: "none",
   recurrence_until: "",
 });
@@ -57,6 +61,8 @@ export default function HubEventsManager({ hubId }) {
   });
   const [eventImageFile, setEventImageFile] = useState(null);
   const [editingEventId, setEditingEventId] = useState(null);
+  const [selectedSignupEvent, setSelectedSignupEvent] = useState(null);
+  const [pendingVolunteerEvent, setPendingVolunteerEvent] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -104,6 +110,7 @@ export default function HubEventsManager({ hubId }) {
         image_url: uploadedImageUrl || editingEvent?.image_url || null,
         capacity: Number(form.capacity) || 0,
         tags: form.tags || [],
+        needs_volunteers: Boolean(form.needs_volunteers),
         hub_id: hubId,
         campus: hub?.campus || null,
       };
@@ -123,15 +130,18 @@ export default function HubEventsManager({ hubId }) {
       );
       const recurrenceId = eventDates.length > 1 ? createRecurrenceId() : null;
 
+      let firstCreatedEvent = null;
       for (const eventDate of eventDates) {
-        await appClient.entities.CommunityEvent.create({
+        const createdEvent = await appClient.entities.CommunityEvent.create({
           ...eventValues,
           event_date: eventDate.toISOString(),
           signup_count: 0,
           recurrence_id: recurrenceId,
         });
+        firstCreatedEvent = firstCreatedEvent || createdEvent;
       }
       resetForm();
+      if (form.needs_volunteers) setPendingVolunteerEvent(firstCreatedEvent);
       setShowForm(false);
       load();
     } finally { setSaving(false); }
@@ -188,6 +198,10 @@ export default function HubEventsManager({ hubId }) {
             <div><label className={labelCls}>{optional("Location")}</label><input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputCls} /></div>
             <div><label className={labelCls}>{optional("Capacity")}</label><input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} className={inputCls} min="0" /></div>
           </div>
+          <label className="flex items-center gap-2 rounded-xl border border-navy/10 px-4 py-3 font-heading text-sm font-semibold text-navy">
+            <input type="checkbox" checked={form.needs_volunteers} onChange={(e) => setForm({ ...form, needs_volunteers: e.target.checked })} />
+            Needs volunteers?
+          </label>
           <EventTagsInput tags={form.tags || []} onChange={(tags) => setForm({ ...form, tags })} />
           <div>
             <label className={labelCls}>{optional("Event Image")}</label>
@@ -203,6 +217,16 @@ export default function HubEventsManager({ hubId }) {
           </button>
         </form>
       )}
+      {pendingVolunteerEvent && (
+        <div className="mb-4 rounded-2xl border border-saffron/20 bg-saffron/5 p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="font-heading text-sm font-bold text-navy">Add volunteer info for {pendingVolunteerEvent.title}</p>
+            <button onClick={() => setPendingVolunteerEvent(null)} className="rounded-lg bg-white px-3 py-2 font-heading text-xs font-semibold text-navy">Skip</button>
+          </div>
+          <VolunteerOpportunityQuickForm event={pendingVolunteerEvent} onCreated={() => setPendingVolunteerEvent(null)} />
+        </div>
+      )}
+      {selectedSignupEvent && <div className="mb-4"><EventSignupsPanel event={selectedSignupEvent} onClose={() => setSelectedSignupEvent(null)} /></div>}
       <div className="space-y-2">
         {events.map((ev) => (
           <div key={ev.id} className="flex items-center justify-between gap-3 rounded-xl border border-navy/8 px-4 py-3">
@@ -211,6 +235,7 @@ export default function HubEventsManager({ hubId }) {
               <p className="font-body text-xs text-navy/50">{ev.location || "Location coming soon"} - {new Date(ev.event_date).toLocaleDateString()}{ev.recurrence_id ? " - Recurring" : ""}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              <button onClick={() => setSelectedSignupEvent(ev)} className="rounded-lg bg-saffron/10 px-3 py-2 font-heading text-xs font-semibold text-saffron hover:bg-saffron/20">Signups</button>
               <button onClick={() => edit(ev)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy/5 text-navy hover:bg-navy/10" aria-label={`Edit ${ev.title}`}><Pencil className="h-4 w-4" /></button>
               <button onClick={() => del(ev.id)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20" aria-label={`Delete ${ev.title}`}><Trash2 className="h-4 w-4" /></button>
             </div>

@@ -6,7 +6,8 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import AdminHubsAdmins from "@/components/admin/AdminHubsAdmins";
 import AdminEvents from "@/components/admin/AdminEvents";
 import AdminImpact from "@/components/admin/AdminImpact";
-import { Building2, Calendar, BarChart3, Loader2 } from "lucide-react";
+import AdminVolunteerOpportunities from "@/components/admin/AdminVolunteerOpportunities";
+import { Building2, Calendar, BarChart3, HandHeart, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function AdminMaster() {
@@ -14,7 +15,7 @@ export default function AdminMaster() {
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab") || "hubs";
-  const tab = ["hubs", "events", "impact"].includes(requestedTab) ? requestedTab : "hubs";
+  const tab = ["hubs", "events", "volunteer", "impact"].includes(requestedTab) ? requestedTab : "hubs";
 
   useEffect(() => {
     appClient.auth.me().then(setMe).catch(() => {}).finally(() => setLoading(false));
@@ -26,6 +27,7 @@ export default function AdminMaster() {
   const tabs = [
     { id: "hubs", label: "Hubs & Admins", icon: Building2 },
     { id: "events", label: "Events", icon: Calendar },
+    { id: "volunteer", label: "Volunteer", icon: HandHeart },
     { id: "impact", label: "Impact", icon: BarChart3 },
   ];
 
@@ -45,6 +47,7 @@ export default function AdminMaster() {
         </div>
         {tab === "hubs" && <AdminHubsAdmins />}
         {tab === "events" && <AdminEvents />}
+        {tab === "volunteer" && <AdminVolunteerOpportunities />}
         {tab === "impact" && <AdminImpact />}
       </div>
     </div>

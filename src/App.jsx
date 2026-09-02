@@ -17,6 +17,9 @@ import Dashboard from '@/pages/Dashboard';
 import Events from '@/pages/Events';
 import Hubs from '@/pages/Hubs';
 import HubDetail from '@/pages/HubDetail';
+import Volunteering from '@/pages/Volunteering';
+import Impact from '@/pages/Impact';
+import Gallery from '@/pages/Gallery';
 import AdminMaster from '@/pages/AdminMaster';
 import HubAdmin from '@/pages/HubAdmin';
 import Login from '@/pages/Login';
@@ -88,6 +91,9 @@ const AuthenticatedApp = () => {
         <Route path="/events" element={<Events />} />
         <Route path="/hubs" element={<Hubs />} />
         <Route path="/hubs/:hubId" element={<HubDetail />} />
+        <Route path="/volunteer" element={<Volunteering />} />
+        <Route path="/impact" element={<Impact />} />
+        <Route path="/gallery" element={<Gallery />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/admin" element={<AdminMaster />} />
