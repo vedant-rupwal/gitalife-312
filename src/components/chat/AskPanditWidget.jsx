@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { BookOpen, Loader2, MessageCircle, RotateCcw, Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +19,10 @@ const getVisibleScreenText = () =>
 
 const isDebugMode = () => new URLSearchParams(window.location.search).has("panditDebug");
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export default function AskPanditWidget() {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState(() => {
     try {
@@ -38,6 +42,23 @@ export default function AskPanditWidget() {
   }, [messages]);
 
   const reset = () => setMessages(initialMessages);
+
+  const typeAssistantMessage = async (text) => {
+    const words = text.split(/(\s+)/).filter(Boolean);
+    setMessages((current) => [...current, { role: "assistant", text: "" }]);
+
+    let typed = "";
+    for (const word of words) {
+      typed += word;
+      setMessages((current) => {
+        const next = [...current];
+        const lastIndex = next.length - 1;
+        next[lastIndex] = { ...next[lastIndex], text: typed };
+        return next;
+      });
+      await sleep(word.trim() ? 22 : 8);
+    }
+  };
 
   const submit = async (event) => {
     event.preventDefault();
@@ -76,14 +97,21 @@ export default function AskPanditWidget() {
       }
       const elapsedSeconds = ((performance.now() - startedAt) / 1000).toFixed(1);
       const debugHeader = response.headers.get("x-pandit-debug");
+      const actionHeader = response.headers.get("x-pandit-action");
+      let action = null;
+      try {
+        action = actionHeader ? JSON.parse(actionHeader) : null;
+      } catch {
+        action = null;
+      }
+
+      if (action?.type === "navigate" && action.path) {
+        navigate(action.path);
+      }
+
       const debugText = debugMode && debugHeader ? `\n\nDebug: ${debugHeader}` : `\n\nAnswered in ${elapsedSeconds}s`;
-      setMessages((current) => [
-        ...current,
-        {
-          role: "assistant",
-          text: `${text.trim() || "I do not have enough retrieved scripture to answer that."}${debugText}`,
-        },
-      ]);
+      const actionText = action?.label ? `${action.label}.\n\n` : "";
+      await typeAssistantMessage(`${actionText}${text.trim() || "I do not have enough retrieved scripture to answer that."}${debugText}`);
     } catch (error) {
       setMessages((current) => [
         ...current,

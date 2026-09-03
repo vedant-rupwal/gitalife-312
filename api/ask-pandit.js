@@ -15,6 +15,7 @@ const MAX_HISTORY_ITEMS = 8;
 const MAX_VERSES = 750;
 const MAX_CONTEXT_VERSES = 6;
 const MAX_CONTEXT_CHUNKS = 6;
+const MAX_WEBSITE_ITEMS = 100;
 
 const getEnv = (...names) => {
   for (const name of names) {
@@ -42,6 +43,55 @@ const tokenize = (value = '') =>
     .filter((token) => token.length > 2);
 
 const unique = (items) => [...new Set(items)];
+
+const normalizeText = (value = '') =>
+  String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const textIncludesAny = (text, terms) => terms.some((term) => text.includes(term));
+
+const editDistance = (left, right) => {
+  if (left === right) return 0;
+  if (!left) return right.length;
+  if (!right) return left.length;
+
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  const current = Array(right.length + 1).fill(0);
+
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    current[0] = leftIndex;
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      const cost = left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1;
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        previous[rightIndex - 1] + cost,
+      );
+    }
+    previous.splice(0, previous.length, ...current);
+  }
+
+  return previous[right.length];
+};
+
+const tokensMatch = (sourceToken, targetToken) => {
+  if (sourceToken === targetToken) return true;
+  if (targetToken.length < 5 || sourceToken.length < 5) return false;
+  return editDistance(sourceToken, targetToken) <= 2;
+};
+
+const tokenOverlapScore = (source, target) => {
+  const sourceTokens = unique(tokenize(source));
+  const targetTokens = unique(tokenize(target));
+  if (!sourceTokens.length || !targetTokens.length) return 0;
+
+  return targetTokens.reduce((score, token) => (
+    sourceTokens.some((sourceToken) => tokensMatch(sourceToken, token)) ? score + 1 : score
+  ), 0) / targetTokens.length;
+};
 
 const timed = async (label, work, metrics) => {
   const start = Date.now();
@@ -167,6 +217,57 @@ const formatVectorContext = (chunks) => {
     .join('\n\n');
 };
 
+const formatWebsiteContext = ({ hubs, events, volunteerOpportunities, impactStats }) => {
+  const sections = [];
+
+  if (hubs.length) {
+    sections.push([
+      'Hubs:',
+      ...hubs.map((hub) => [
+        `- ${hub.name}`,
+        hub.campus ? `campus: ${hub.campus}` : '',
+        hub.neighborhood ? `neighborhood: ${hub.neighborhood}` : '',
+        hub.meeting_day || hub.meeting_time ? `meeting: ${[hub.meeting_day, hub.meeting_time].filter(Boolean).join(' ')}` : '',
+        hub.description ? `description: ${hub.description}` : '',
+      ].filter(Boolean).join('; ')),
+    ].join('\n'));
+  }
+
+  if (events.length) {
+    sections.push([
+      'Upcoming events:',
+      ...events.map((event) => [
+        `- ${event.title}`,
+        event.type ? `type: ${event.type}` : '',
+        event.event_date ? `date: ${event.event_date}` : '',
+        event.location ? `location: ${event.location}` : '',
+        event.description ? `description: ${event.description}` : '',
+      ].filter(Boolean).join('; ')),
+    ].join('\n'));
+  }
+
+  if (volunteerOpportunities.length) {
+    sections.push([
+      'Volunteer opportunities:',
+      ...volunteerOpportunities.map((opportunity) => [
+        `- ${opportunity.title}`,
+        opportunity.location ? `location: ${opportunity.location}` : '',
+        opportunity.starts_at ? `starts: ${opportunity.starts_at}` : '',
+        opportunity.description ? `description: ${opportunity.description}` : '',
+      ].filter(Boolean).join('; ')),
+    ].join('\n'));
+  }
+
+  if (impactStats.length) {
+    sections.push([
+      'Impact stats:',
+      ...impactStats.map((stat) => `- ${stat.label}: ${stat.value}${stat.unit ? ` ${stat.unit}` : ''}`),
+    ].join('\n'));
+  }
+
+  return sections.join('\n\n') || 'No live website data was retrieved.';
+};
+
 const normalizeVerse = (verse) => ({
   chapter: verse.chapter,
   verse_ref: verse.verse_ref || verse.verse_number,
@@ -261,6 +362,122 @@ const fetchVerseContext = async (question) => {
     row_count: rows.length,
     selected_count: selected.length,
   };
+};
+
+const fetchTableRows = async (path) => {
+  let result;
+  try {
+    result = await fetchSupabase(path, {}, VECTOR_SEARCH_TIMEOUT_MS);
+  } catch (error) {
+    console.warn(`Website context fetch failed for ${path}:`, error);
+    return [];
+  }
+
+  if (!result.response?.ok) return [];
+
+  const rows = await result.response.json();
+  return Array.isArray(rows) ? rows : [];
+};
+
+const fetchWebsiteContext = async () => {
+  const today = new Date().toISOString();
+  const [hubs, events, volunteerOpportunities, impactStats] = await Promise.all([
+    fetchTableRows(`/rest/v1/hubs?select=id,name,campus,neighborhood,meeting_day,meeting_time,description&order=name.asc&limit=${MAX_WEBSITE_ITEMS}`),
+    fetchTableRows(`/rest/v1/community_events?select=id,title,type,event_date,location,description&event_date=gte.${encodeURIComponent(today)}&order=event_date.asc&limit=${MAX_WEBSITE_ITEMS}`),
+    fetchTableRows(`/rest/v1/volunteer_opportunities?select=id,title,description,location,starts_at&is_active=eq.true&order=starts_at.asc.nullslast&limit=${MAX_WEBSITE_ITEMS}`),
+    fetchTableRows(`/rest/v1/impact_stats?select=label,value,unit&order=sort_order.asc&limit=${MAX_WEBSITE_ITEMS}`),
+  ]);
+
+  return {
+    text: formatWebsiteContext({ hubs, events, volunteerOpportunities, impactStats }),
+    hubs,
+    events,
+    volunteerOpportunities,
+    impactStats,
+  };
+};
+
+const findBestMatch = (question, items, fields) => {
+  const normalizedQuestion = normalizeText(question);
+  let best = null;
+
+  for (const item of items) {
+    const label = fields.map((field) => item[field]).filter(Boolean).join(' ');
+    const normalizedLabel = normalizeText(label);
+    if (!normalizedLabel) continue;
+
+    const score = normalizedQuestion.includes(normalizedLabel)
+      ? 1
+      : tokenOverlapScore(normalizedQuestion, normalizedLabel);
+
+    if (!best || score > best.score) best = { item, score };
+  }
+
+  return best?.score >= 0.55 ? best.item : null;
+};
+
+const determineNavigationAction = (question, websiteContext) => {
+  const normalizedQuestion = normalizeText(question);
+  const hubs = websiteContext?.hubs || [];
+  const events = websiteContext?.events || [];
+  const volunteerOpportunities = websiteContext?.volunteerOpportunities || [];
+
+  const matchedHub = findBestMatch(question, hubs, ['name', 'campus', 'neighborhood']);
+  if (matchedHub?.id && textIncludesAny(normalizedQuestion, ['hub', 'center', 'campus', 'neighborhood', normalizeText(matchedHub.name)])) {
+    return {
+      type: 'navigate',
+      path: `/hubs/${matchedHub.id}`,
+      label: `Opening ${matchedHub.name}`,
+    };
+  }
+
+  const matchedOpportunity = findBestMatch(question, volunteerOpportunities, ['title', 'description', 'location']);
+  if (matchedOpportunity?.id && textIncludesAny(normalizedQuestion, ['volunteer', 'seva', 'help', 'service', normalizeText(matchedOpportunity.title)])) {
+    return {
+      type: 'navigate',
+      path: '/volunteer',
+      label: `Opening volunteer opportunities`,
+    };
+  }
+
+  const matchedEvent = findBestMatch(question, events, ['title', 'type', 'location']);
+  if (matchedEvent?.type && textIncludesAny(normalizedQuestion, ['event', 'class', 'kirtan', 'retreat', 'program', normalizeText(matchedEvent.title)])) {
+    return {
+      type: 'navigate',
+      path: `/events?type=${encodeURIComponent(matchedEvent.type)}`,
+      label: `Opening ${matchedEvent.type} events`,
+    };
+  }
+
+  if (textIncludesAny(normalizedQuestion, ['kirtan', 'harinam', 'chanting'])) {
+    return { type: 'navigate', path: '/events?type=kirtan', label: 'Opening kirtan events' };
+  }
+
+  if (textIncludesAny(normalizedQuestion, ['retreat', 'retreats'])) {
+    return { type: 'navigate', path: '/events?type=retreat', label: 'Opening retreat events' };
+  }
+
+  if (textIncludesAny(normalizedQuestion, ['volunteer', 'volunteering', 'seva', 'service opportunities'])) {
+    return { type: 'navigate', path: '/volunteer', label: 'Opening volunteer opportunities' };
+  }
+
+  if (textIncludesAny(normalizedQuestion, ['impact', 'stats', 'service numbers'])) {
+    return { type: 'navigate', path: '/impact', label: 'Opening impact' };
+  }
+
+  if (textIncludesAny(normalizedQuestion, ['gallery', 'photos', 'pictures'])) {
+    return { type: 'navigate', path: '/gallery', label: 'Opening photo gallery' };
+  }
+
+  if (textIncludesAny(normalizedQuestion, ['hubs', 'hub', 'find a hub', 'map'])) {
+    return { type: 'navigate', path: '/hubs', label: 'Opening hubs' };
+  }
+
+  if (textIncludesAny(normalizedQuestion, ['events', 'programs', 'classes'])) {
+    return { type: 'navigate', path: '/events', label: 'Opening events' };
+  }
+
+  return null;
 };
 
 const normalizeEmbeddingResponse = (data) => {
@@ -398,7 +615,7 @@ const fetchScriptureContext = async (question, bookFilter, debugInfo = {}) => {
   return verseContext;
 };
 
-const buildPrompt = ({ question, visibleScreenText, history, context }) => {
+const buildPrompt = ({ question, visibleScreenText, history, scriptureContext, websiteContext }) => {
   const recentHistory = history
     .slice(-MAX_HISTORY_ITEMS)
     .map((message) => `${message.role === 'user' ? 'User' : 'Assistant'}: ${String(message.text || '').slice(0, 900)}`)
@@ -406,16 +623,21 @@ const buildPrompt = ({ question, visibleScreenText, history, context }) => {
 
   return [
     'You are Ask the Pandit for the GitaLife 312 website.',
-    'Answer in clear, gentle English for students and young professionals.',
-    'Use only the scripture context provided below when making scriptural claims.',
-    'If the context does not contain enough information, say that you do not have enough retrieved scripture to answer fully.',
-    'Keep the answer concise and practical.',
+    'Answer in clear, gentle English for students and young professionals, with a warm conversational tone.',
+    'Your theological viewpoint must be strictly ISKCON and Srila Prabhupada centered.',
+    'For scripture, philosophy, theology, practice, Krishna consciousness, guru, devotional life, or meaning-of-life questions, use only the retrieved scriptures, translations, and purports provided below.',
+    'Do not use outside traditions, speculative interpretations, generic Hinduism, Advaita, New Age ideas, or non-ISKCON commentary as authority.',
+    'If the retrieved scripture context does not contain enough information for a scriptural claim, say that you do not have enough retrieved Srila Prabhupada/ISKCON scripture context to answer fully.',
+    'For questions about this website, GitaLife 312, events, hubs, volunteering, impact, navigation, or signups, you may answer from the website context and current page text below.',
+    'Keep the answer concise, practical, and natural, like an ongoing conversation.',
     '',
     `Current page text: ${visibleScreenText || 'No page text provided.'}`,
     '',
+    `Website context:\n${websiteContext || 'No live website context provided.'}`,
+    '',
     `Recent chat:\n${recentHistory || 'No previous messages.'}`,
     '',
-    `Retrieved scripture context:\n${context}`,
+    `Retrieved Srila Prabhupada/ISKCON scripture context:\n${scriptureContext}`,
     '',
     `User question: ${question}`,
   ].join('\n');
@@ -440,7 +662,7 @@ const callHuggingFaceModel = async (prompt, model) => {
         messages: [
           {
             role: 'system',
-            content: 'You are Ask the Pandit for GitaLife 312. Answer in English only and do not hallucinate scripture.',
+            content: 'You are Ask the Pandit for GitaLife 312. Answer in English only. Scripture and theology answers must be strictly ISKCON and Srila Prabhupada centered, using only retrieved scripture, translation, and purport context. Website questions may use provided website context.',
           },
           { role: 'user', content: prompt },
         ],
@@ -496,8 +718,16 @@ export default async function handler(req, res) {
     const visibleScreenText = String(body?.visible_screen_text || '').slice(0, MAX_VISIBLE_TEXT_CHARS);
     const history = Array.isArray(body?.history) ? body.history : [];
     const bookFilter = String(body?.book_filter || '').trim();
-    const { context, citations, source } = await timed('retrieve_ms', () => fetchScriptureContext(question, bookFilter, retrievalDebug), metrics);
-    const prompt = buildPrompt({ question, visibleScreenText, history, context });
+    const [{ context: scriptureContext, citations, source }, websiteContext] = await timed(
+      'retrieve_ms',
+      () => Promise.all([
+        fetchScriptureContext(question, bookFilter, retrievalDebug),
+        fetchWebsiteContext(),
+      ]),
+      metrics,
+    );
+    const navigationAction = determineNavigationAction(question, websiteContext);
+    const prompt = buildPrompt({ question, visibleScreenText, history, scriptureContext, websiteContext: websiteContext.text });
     const { answer, model } = await timed('chat_ms', () => callHuggingFace(prompt), metrics);
     const citationText = citations.length ? `\n\nCitations: ${unique(citations).join(', ')}` : '';
 
@@ -509,6 +739,10 @@ export default async function handler(req, res) {
         context_source: source || 'unknown',
         retrieval: retrievalDebug,
       }));
+    }
+
+    if (navigationAction) {
+      res.setHeader('x-pandit-action', JSON.stringify(navigationAction));
     }
 
     res.setHeader('content-type', 'text/plain; charset=utf-8');
