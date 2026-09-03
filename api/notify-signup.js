@@ -159,12 +159,30 @@ export default async function handler(req, res) {
     return json(res, 202, { skipped: true, reason: 'RESEND_API_KEY is not configured.' });
   }
 
+  const { kind, signup, token } = req.body || {};
   const serviceClient = createServiceClient();
+  const recipients = await getAdminRecipients(serviceClient);
+  if (recipients.length === 0) {
+    return json(res, 202, { skipped: true, reason: 'No admin notification recipients configured.' });
+  }
+
+  if (kind === 'test') {
+    if (!process.env.SIGNUP_TEST_TOKEN || token !== process.env.SIGNUP_TEST_TOKEN) {
+      return json(res, 403, { error: 'Invalid test token.' });
+    }
+
+    const message = {
+      subject: 'GitaLife 312 signup email test',
+      text: 'This is a test notification from GitaLife 312.',
+      html: '<p>This is a test notification from GitaLife 312.</p>',
+    };
+    return sendEmail({ res, recipients, replyTo: recipients[0], message });
+  }
+
   if (!serviceClient) {
     return json(res, 202, { skipped: true, reason: 'Supabase server env vars are not configured.' });
   }
 
-  const { kind, signup } = req.body || {};
   if (!['event', 'volunteer'].includes(kind) || !signup?.id) {
     return json(res, 400, { error: 'Invalid signup notification payload.' });
   }
@@ -176,12 +194,11 @@ export default async function handler(req, res) {
     return json(res, 404, { error: 'Signup was not found.' });
   }
 
-  const recipients = await getAdminRecipients(serviceClient);
-  if (recipients.length === 0) {
-    return json(res, 202, { skipped: true, reason: 'No admin notification recipients configured.' });
-  }
-
   const message = buildMessage({ kind, signup: record.signup, item: record.item });
+  return sendEmail({ res, recipients, replyTo: record.signup.email, message });
+}
+
+const sendEmail = async ({ res, recipients, replyTo, message }) => {
   const from = process.env.SIGNUP_NOTIFICATION_FROM || 'GitaLife 312 <onboarding@resend.dev>';
 
   const response = await fetch('https://api.resend.com/emails', {
@@ -193,7 +210,7 @@ export default async function handler(req, res) {
     body: JSON.stringify({
       from,
       to: recipients,
-      reply_to: record.signup.email,
+      reply_to: replyTo,
       subject: message.subject,
       text: message.text,
       html: message.html,
@@ -202,8 +219,10 @@ export default async function handler(req, res) {
 
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
+    console.error('Resend notification failed', response.status, body);
     return json(res, response.status, { error: body.message || 'Email notification failed.' });
   }
 
+  console.info('Signup notification sent', { id: body.id, recipients });
   return json(res, 200, { sent: true, id: body.id });
-}
+};
