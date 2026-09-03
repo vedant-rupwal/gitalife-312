@@ -31,6 +31,8 @@ If you already ran the older schema, run [supabase/migrations/hub-location-and-i
 
 Run [supabase/migrations/event-image-upload.sql](./supabase/migrations/event-image-upload.sql) to create the public `event-images` Storage bucket for event image uploads.
 
+Run [supabase/scripture_vectors.sql](./supabase/scripture_vectors.sql) to create the `scripture_chunks` pgvector table and search function for Ask the Pandit.
+
 Required Supabase project settings:
 
 - Enable Email auth.
@@ -64,10 +66,11 @@ Use the normal Vercel Vite defaults:
   - `VITE_GEOCODE_REGION` optional, defaults to `Chicago, IL, USA` for estimating hub map coordinates from campus/neighborhood text
   - `HF_TOKEN` for the floating Ask the Pandit scripture chatbot
   - `HF_MODEL` optional, defaults to `Qwen/Qwen2.5-7B-Instruct`
+  - `HF_EMBEDDING_MODEL` optional, defaults to `sentence-transformers/all-MiniLM-L6-v2`
 
 The service-role key is used only by the Vercel `/api/invite-user` server route for admin invites. Never prefix it with `VITE_`.
 
-The Ask the Pandit chatbot runs through the Vercel `/api/ask-pandit` server route. That route retrieves Bhagavad-gita context from Supabase and calls the Hugging Face model from the server, so no separate Hugging Face Space or hosted chatbot site is required.
+The Ask the Pandit chatbot runs through the Vercel `/api/ask-pandit` server route. That route searches scripture vectors in Supabase and calls the Hugging Face model from the server, so no separate Hugging Face Space or hosted chatbot site is required.
 
 `vercel.json` rewrites all routes to `index.html` so direct links such as `/hubs/:id`, `/login`, and `/reset-password` work.
 
@@ -98,3 +101,16 @@ That writes:
 - `supabase/seed-verses/*.sql`
 
 Run `supabase/seed-verses.sql` in the Supabase SQL editor after `supabase/schema.sql`. If the SQL editor struggles with the large file, run the smaller files in `supabase/seed-verses/` in filename order from `001.sql` through `132.sql`.
+
+## Import Existing Chroma Vectors
+
+The GooglePlugin Chroma database already contains vectorized scripture embeddings. To reuse those exact embeddings in Supabase, first run [supabase/scripture_vectors.sql](./supabase/scripture_vectors.sql), then run:
+
+```powershell
+cd C:/Users/vedan/Python/GitaLife_312
+$env:SUPABASE_URL="https://your-project-ref.supabase.co"
+$env:SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+python scripts/import-chroma-vectors-to-supabase.py --chroma-path C:/Users/vedan/Python/GooglePlugin/chroma_db
+```
+
+The importer copies documents, metadata, and stored Chroma embeddings into `public.scripture_chunks`; it does not regenerate the corpus embeddings.

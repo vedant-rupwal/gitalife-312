@@ -1,9 +1,12 @@
 const DEFAULT_HF_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
+const DEFAULT_HF_EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2';
 const HF_ROUTER_BASE_URL = 'https://router.huggingface.co/v1';
+const HF_INFERENCE_BASE_URL = 'https://router.huggingface.co/hf-inference/models';
 const MAX_VISIBLE_TEXT_CHARS = 6000;
 const MAX_HISTORY_ITEMS = 8;
 const MAX_VERSES = 750;
 const MAX_CONTEXT_VERSES = 6;
+const MAX_CONTEXT_CHUNKS = 6;
 
 const getEnv = (...names) => {
   for (const name of names) {
@@ -31,6 +34,38 @@ const tokenize = (value = '') =>
     .filter((token) => token.length > 2);
 
 const unique = (items) => [...new Set(items)];
+
+const getSupabaseConfig = () => ({
+  url: getEnv('SUPABASE_URL', 'VITE_SUPABASE_URL').replace(/\/+$/, ''),
+  key: getEnv('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY'),
+});
+
+const buildChunkCitation = (chunk) => {
+  if (chunk.citation) return chunk.citation;
+  if (chunk.source_ref) return chunk.source_ref;
+  if (chunk.book_title && chunk.chapter_num && chunk.verse_num) {
+    return `${chunk.book_title} ${chunk.chapter_num}.${chunk.verse_num}`;
+  }
+  if (chunk.book_title && chunk.verse_num) return `${chunk.book_title} ${chunk.verse_num}`;
+  if (chunk.book_title && chunk.chapter_num) return `${chunk.book_title} Chapter ${chunk.chapter_num}`;
+  return chunk.book_title || chunk.source_collection || 'Scripture corpus';
+};
+
+const formatVectorContext = (chunks) => {
+  if (!chunks.length) return 'No matching passages were found in the vector scripture corpus.';
+
+  return chunks
+    .map((chunk) => {
+      const citation = buildChunkCitation(chunk);
+      return [
+        `Citation: ${citation}`,
+        chunk.content_type ? `Type: ${chunk.content_type}` : '',
+        `Text: ${chunk.text_content}`,
+        chunk.source_url ? `Source: ${chunk.source_url}` : '',
+      ].filter(Boolean).join('\n');
+    })
+    .join('\n\n');
+};
 
 const normalizeVerse = (verse) => ({
   chapter: verse.chapter,
@@ -67,8 +102,7 @@ const formatContext = (verses) => {
 };
 
 const fetchVerseContext = async (question) => {
-  const supabaseUrl = getEnv('SUPABASE_URL', 'VITE_SUPABASE_URL');
-  const supabaseKey = getEnv('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY');
+  const { url: supabaseUrl, key: supabaseKey } = getSupabaseConfig();
 
   if (!supabaseUrl || !supabaseKey) {
     return {
@@ -118,6 +152,98 @@ const fetchVerseContext = async (question) => {
     context: formatContext(selected),
     citations: selected.map((verse) => `BG ${verse.chapter}.${verse.verse_ref}`),
   };
+};
+
+const normalizeEmbeddingResponse = (data) => {
+  if (Array.isArray(data) && data.every((item) => typeof item === 'number')) return data;
+  if (Array.isArray(data) && Array.isArray(data[0])) return data[0];
+  if (Array.isArray(data?.embeddings) && data.embeddings.every((item) => typeof item === 'number')) return data.embeddings;
+  if (Array.isArray(data?.embeddings?.[0])) return data.embeddings[0];
+  return null;
+};
+
+const fetchQueryEmbedding = async (text) => {
+  const token = getEnv('HF_TOKEN', 'HUGGING_FACE_TOKEN');
+  if (!token) throw new Error('Missing HF_TOKEN in Vercel environment variables.');
+
+  const model = getEnv('HF_EMBEDDING_MODEL') || DEFAULT_HF_EMBEDDING_MODEL;
+  const response = await fetch(`${HF_INFERENCE_BASE_URL}/${model}`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${token}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      inputs: text,
+      normalize: true,
+      truncate: true,
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.error?.message || data?.message || data?.error || 'Hugging Face embedding request failed.');
+  }
+
+  const embedding = normalizeEmbeddingResponse(data);
+  if (!embedding?.length) {
+    throw new Error('Hugging Face embedding response did not include a usable vector.');
+  }
+
+  return embedding;
+};
+
+const fetchVectorContext = async (question, bookFilter) => {
+  const { url: supabaseUrl, key: supabaseKey } = getSupabaseConfig();
+
+  if (!supabaseUrl || !supabaseKey) {
+    return {
+      context: 'The Supabase vector scripture table is not configured for this Vercel function.',
+      citations: [],
+      available: false,
+    };
+  }
+
+  const queryEmbedding = await fetchQueryEmbedding(question);
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/match_scripture_chunks`, {
+    method: 'POST',
+    headers: {
+      apikey: supabaseKey,
+      authorization: `Bearer ${supabaseKey}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      query_embedding: `[${queryEmbedding.join(',')}]`,
+      match_count: MAX_CONTEXT_CHUNKS,
+      book_filter: bookFilter ? [bookFilter] : null,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.warn(`Vector scripture search unavailable: ${response.status} ${errorText}`);
+    return {
+      context: 'The Supabase vector scripture table could not be searched yet.',
+      citations: [],
+      available: false,
+    };
+  }
+
+  const rows = await response.json();
+  const chunks = Array.isArray(rows) ? rows : [];
+
+  return {
+    context: formatVectorContext(chunks),
+    citations: chunks.map(buildChunkCitation),
+    available: true,
+  };
+};
+
+const fetchScriptureContext = async (question, bookFilter) => {
+  const vectorContext = await fetchVectorContext(question, bookFilter);
+  if (vectorContext.available && vectorContext.citations.length) return vectorContext;
+
+  return fetchVerseContext(question);
 };
 
 const buildPrompt = ({ question, visibleScreenText, history, context }) => {
@@ -197,7 +323,8 @@ export default async function handler(req, res) {
   try {
     const visibleScreenText = String(body?.visible_screen_text || '').slice(0, MAX_VISIBLE_TEXT_CHARS);
     const history = Array.isArray(body?.history) ? body.history : [];
-    const { context, citations } = await fetchVerseContext(question);
+    const bookFilter = String(body?.book_filter || '').trim();
+    const { context, citations } = await fetchScriptureContext(question, bookFilter);
     const prompt = buildPrompt({ question, visibleScreenText, history, context });
     const answer = await callHuggingFace(prompt);
     const citationText = citations.length ? `\n\nCitations: ${unique(citations).join(', ')}` : '';
