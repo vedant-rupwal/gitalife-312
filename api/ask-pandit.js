@@ -81,18 +81,30 @@ const getChatModelCandidates = () => {
 };
 
 const getSupabaseConfig = () => ({
-  url: getEnv('SUPABASE_URL', 'VITE_SUPABASE_URL').replace(/\/+$/, ''),
+  urls: unique([
+    getEnv('SUPABASE_URL'),
+    getEnv('VITE_SUPABASE_URL'),
+  ].filter(Boolean).map((url) => url.replace(/\/+$/, ''))),
   keys: unique([
     getEnv('SUPABASE_SERVICE_ROLE_KEY'),
     getEnv('SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY'),
   ].filter(Boolean)),
 });
 
+const getHost = (url) => {
+  try {
+    return new URL(url).host;
+  } catch {
+    return 'invalid-url';
+  }
+};
+
 const fetchSupabase = async (path, options = {}, timeoutMs) => {
-  const { url: supabaseUrl, keys } = getSupabaseConfig();
-  if (!supabaseUrl || !keys.length) {
+  const { urls, keys } = getSupabaseConfig();
+  if (!urls.length || !keys.length) {
     return {
       response: null,
+      host: null,
       keyIndex: -1,
       error: 'missing_supabase_config',
     };
@@ -100,26 +112,29 @@ const fetchSupabase = async (path, options = {}, timeoutMs) => {
 
   let lastText = '';
 
-  for (let index = 0; index < keys.length; index += 1) {
-    const key = keys[index];
-    const response = await fetchWithTimeout(`${supabaseUrl}${path}`, {
-      ...options,
-      headers: {
-        ...(options.headers || {}),
-        apikey: key,
-        authorization: `Bearer ${key}`,
-      },
-    }, timeoutMs);
+  for (const supabaseUrl of urls) {
+    for (let index = 0; index < keys.length; index += 1) {
+      const key = keys[index];
+      const response = await fetchWithTimeout(`${supabaseUrl}${path}`, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          apikey: key,
+          authorization: `Bearer ${key}`,
+        },
+      }, timeoutMs);
 
-    if (response.status !== 401 && response.status !== 403) {
-      return { response, keyIndex: index, error: null };
+      if (response.status !== 401 && response.status !== 403 && response.status !== 404) {
+        return { response, host: getHost(supabaseUrl), keyIndex: index, error: null };
+      }
+
+      lastText = await response.text();
     }
-
-    lastText = await response.text();
   }
 
   return {
     response: null,
+    host: getHost(urls[urls.length - 1]),
     keyIndex: keys.length - 1,
     error: lastText || 'supabase_auth_failed',
   };
@@ -197,6 +212,7 @@ const fetchVerseContext = async (question) => {
       context: 'The Supabase verse table is not configured for this Vercel function.',
       citations: [],
       source: 'verses',
+      host: result.host || null,
       row_count: 0,
       selected_count: 0,
       reason: result.error,
@@ -210,6 +226,7 @@ const fetchVerseContext = async (question) => {
       context: `The Supabase verse table could not be loaded. Status ${response.status}.`,
       citations: [],
       source: 'verses',
+      host: result.host || null,
       row_count: 0,
       selected_count: 0,
       reason: `rest_${response.status}`,
@@ -240,6 +257,7 @@ const fetchVerseContext = async (question) => {
     context: formatContext(selected),
     citations: selected.map((verse) => `BG ${verse.chapter}.${verse.verse_ref}`),
     source: 'verses',
+    host: result.host || null,
     row_count: rows.length,
     selected_count: selected.length,
   };
@@ -286,9 +304,9 @@ const fetchQueryEmbedding = async (text) => {
 };
 
 const fetchVectorContext = async (question, bookFilter) => {
-  const { url: supabaseUrl, keys } = getSupabaseConfig();
+  const { urls, keys } = getSupabaseConfig();
 
-  if (!supabaseUrl || !keys.length) {
+  if (!urls.length || !keys.length) {
     return {
       context: 'The Supabase vector scripture table is not configured for this Vercel function.',
       citations: [],
@@ -317,6 +335,7 @@ const fetchVectorContext = async (question, bookFilter) => {
       context: 'The Supabase vector scripture table could not be searched yet.',
       citations: [],
       available: false,
+      host: result.host || null,
       reason: result.error,
     };
   }
@@ -328,6 +347,7 @@ const fetchVectorContext = async (question, bookFilter) => {
       context: 'The Supabase vector scripture table could not be searched yet.',
       citations: [],
       available: false,
+      host: result.host || null,
       reason: `rpc_${response.status}`,
     };
   }
@@ -340,6 +360,7 @@ const fetchVectorContext = async (question, bookFilter) => {
     citations: chunks.map(buildChunkCitation),
     available: true,
     source: 'scripture_chunks',
+    host: result.host || null,
     row_count: chunks.length,
   };
 };
@@ -350,6 +371,7 @@ const fetchScriptureContext = async (question, bookFilter, debugInfo = {}) => {
     debugInfo.vector = {
       available: vectorContext.available,
       reason: vectorContext.reason || null,
+      host: vectorContext.host || null,
       row_count: vectorContext.row_count || 0,
       citations: vectorContext.citations.length,
     };
@@ -367,6 +389,8 @@ const fetchScriptureContext = async (question, bookFilter, debugInfo = {}) => {
   const verseContext = await fetchVerseContext(question);
   debugInfo.fallback = {
     source: verseContext.source || 'verses',
+    reason: verseContext.reason || null,
+    host: verseContext.host || null,
     row_count: verseContext.row_count || 0,
     selected_count: verseContext.selected_count || 0,
     citations: verseContext.citations.length,
