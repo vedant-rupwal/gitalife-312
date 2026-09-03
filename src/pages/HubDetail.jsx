@@ -70,21 +70,16 @@ export default function HubDetail() {
                 <InstagramWidget handle={hub.instagram_handle} events={events} />
               </div>
             )}
-            <div className="mt-6 hidden lg:block">
-              <HubContactCard hub={hub} />
-            </div>
-          </div>
-          <div className="lg:col-span-2 space-y-10">
-            <div className="lg:hidden">
-              <HubContactCard hub={hub} />
-            </div>
-            <div>
+            <div className="mt-8">
               <SectionHeading eyebrow="Gatherings" title="Upcoming Events" />
-              <div className="grid sm:grid-cols-2 gap-6">
+              <div className="space-y-4">
                 {upcoming.map((ev) => <EventCard key={ev.id} event={ev} onSignup={setSignupEvent} />)}
                 {upcoming.length === 0 && <p className="font-body text-sm text-navy/50">No upcoming events for this hub yet.</p>}
               </div>
             </div>
+          </div>
+          <div className="lg:col-span-2 space-y-10">
+            <HubContactCard hub={hub} />
             {recent.length > 0 && (
               <div>
                 <SectionHeading eyebrow="Recent Activity" title="Past Gatherings" />

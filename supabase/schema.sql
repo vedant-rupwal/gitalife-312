@@ -92,7 +92,7 @@ create table if not exists public.hub_contacts (
   hub_name text,
   name text not null,
   email text not null,
-  phone text,
+  phone text not null,
   how_found text,
   note text,
   created_at timestamptz not null default now(),
@@ -398,7 +398,11 @@ using (
 drop policy if exists "Hub contacts are public to create" on public.hub_contacts;
 create policy "Hub contacts are public to create"
 on public.hub_contacts for insert
-with check (true);
+with check (
+  nullif(trim(name), '') is not null
+  and nullif(trim(email), '') is not null
+  and nullif(trim(phone), '') is not null
+);
 
 drop policy if exists "Admins can read hub contacts" on public.hub_contacts;
 create policy "Admins can read hub contacts"

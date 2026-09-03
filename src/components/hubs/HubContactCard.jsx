@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { CheckCircle2, Loader2, MapPin } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { appClient } from "@/api/appClient";
 
-const inputCls = "w-full rounded-2xl border border-navy/10 bg-white/90 px-5 py-4 font-body text-sm text-navy outline-none transition-all placeholder:text-navy/35 focus:border-saffron focus:ring-2 focus:ring-saffron/20";
+const inputCls = "w-full rounded-xl border border-navy/12 bg-white px-4 py-3.5 font-body text-sm text-navy outline-none transition-all placeholder:text-navy/35 focus:border-saffron focus:ring-2 focus:ring-saffron/20";
 const labelCls = "block font-heading text-xs font-semibold uppercase tracking-[0.22em] text-navy/45 mb-2";
 
 const formatMeeting = (hub) => {
@@ -10,12 +10,6 @@ const formatMeeting = (hub) => {
   const time = hub.meeting_time?.trim();
   if (day && time) return `${day}, ${time}`;
   return day || time || "Schedule coming soon";
-};
-
-const mapsUrl = (hub) => {
-  if (hub.lat && hub.lng) return `https://www.google.com/maps/search/?api=1&query=${hub.lat},${hub.lng}`;
-  const query = [hub.name, hub.campus, hub.neighborhood, "Chicago IL"].filter(Boolean).join(", ");
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 };
 
 export default function HubContactCard({ hub }) {
@@ -45,7 +39,7 @@ export default function HubContactCard({ hub }) {
         hub_name: hub.name,
         name: form.name.trim(),
         email: form.email.trim(),
-        phone: form.phone.trim() || null,
+        phone: form.phone.trim(),
         how_found: form.how_found || null,
         note: form.note.trim() || null,
       });
@@ -59,13 +53,13 @@ export default function HubContactCard({ hub }) {
   };
 
   return (
-    <div className="rounded-2xl border border-navy/10 bg-[#d8c7a3]/55 p-6 shadow-sm sm:p-8">
-      <div className="mb-8">
+    <div className="rounded-2xl border border-navy/8 bg-white p-6 shadow-sm sm:p-8">
+      <div className="mb-7">
         <p className="mb-3 font-heading text-xs font-bold uppercase tracking-[0.32em] text-saffron">Save Your Seat - Free</p>
-        <h2 className="font-heading text-3xl font-bold text-navy">Join {hub.name}</h2>
+        <h2 className="font-heading text-3xl font-bold text-navy sm:text-4xl">Join {hub.name}</h2>
       </div>
 
-      <div className="mb-8 divide-y divide-navy/10 border-y border-navy/10">
+      <div className="mb-7 divide-y divide-navy/8 border-y border-navy/8">
         <div className="grid grid-cols-[120px_1fr] gap-4 py-4">
           <span className="font-heading text-xs font-semibold uppercase tracking-[0.24em] text-navy/45">Next Class</span>
           <span className="text-right font-heading text-sm font-bold text-navy">{hub.meeting_day || "Weekly gathering"}</span>
@@ -74,14 +68,6 @@ export default function HubContactCard({ hub }) {
           <span className="font-heading text-xs font-semibold uppercase tracking-[0.24em] text-navy/45">Time</span>
           <span className="text-right font-heading text-sm font-bold text-navy">{formatMeeting(hub)}</span>
         </div>
-        <div className="grid grid-cols-[120px_1fr] gap-4 py-4">
-          <span className="font-heading text-xs font-semibold uppercase tracking-[0.24em] text-navy/45">Venue</span>
-          <span className="text-right font-heading text-sm font-bold text-navy">{[hub.campus, hub.neighborhood].filter(Boolean).join(" - ") || "Details coming soon"}</span>
-        </div>
-        <a href={mapsUrl(hub)} target="_blank" rel="noopener noreferrer" className="grid grid-cols-[120px_1fr] gap-4 py-4">
-          <span className="font-heading text-xs font-semibold uppercase tracking-[0.24em] text-navy/45">Getting There</span>
-          <span className="inline-flex justify-end gap-2 text-right font-heading text-sm font-bold text-navy hover:text-saffron"><MapPin className="mt-0.5 h-4 w-4 shrink-0" />Open in Maps</span>
-        </a>
       </div>
 
       {saved ? (
@@ -103,8 +89,8 @@ export default function HubContactCard({ hub }) {
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Mobile (Optional)</label>
-              <input value={form.phone} onChange={(event) => update("phone", event.target.value)} className={inputCls} placeholder="(201) 555-0134" />
+              <label className={labelCls}>Mobile (Required)</label>
+              <input type="tel" value={form.phone} onChange={(event) => update("phone", event.target.value)} className={inputCls} placeholder="(201) 555-0134" required />
             </div>
             <div>
               <label className={labelCls}>How Did You Find Us? (Optional)</label>
@@ -124,7 +110,7 @@ export default function HubContactCard({ hub }) {
             <textarea value={form.note} onChange={(event) => update("note", event.target.value)} className={inputCls} rows={3} placeholder="Anything you want the hub team to know..." />
           </div>
           {error && <p className="font-body text-sm text-destructive">{error}</p>}
-          <button type="submit" disabled={saving} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-saffron px-6 py-4 font-heading text-base font-bold text-white transition-all hover:scale-[1.01] disabled:opacity-60">
+          <button type="submit" disabled={saving} className="flex w-full items-center justify-center gap-2 rounded-xl bg-saffron px-6 py-4 font-heading text-base font-bold text-white transition-all hover:bg-saffron/90 disabled:opacity-60">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Register once - come every week
           </button>
