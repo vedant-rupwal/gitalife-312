@@ -200,7 +200,7 @@ export const appClient = {
 
   notifications: {
     async sendSignupNotification(payload) {
-      const response = await fetch('/api/notify-signup', {
+      const response = await fetch('/api/notifySignup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

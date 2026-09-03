@@ -81,7 +81,7 @@ The Ask the Pandit chatbot runs through the Vercel `/api/ask-pandit` server rout
 
 To debug chatbot response time, open the site with `?panditDebug=1`, ask a question, and the chat response will include retrieval and model timing details.
 
-Signup notification emails run through the Vercel `/api/notify-signup` server route and Resend. Signups still save if Resend is not configured, but no notification email will be sent.
+Signup notification emails run through the Vercel `/api/notifySignup` server route and Resend. Signups still save if Resend is not configured, but no notification email will be sent.
 
 `vercel.json` rewrites all routes to `index.html` so direct links such as `/hubs/:id`, `/login`, and `/reset-password` work.
 
