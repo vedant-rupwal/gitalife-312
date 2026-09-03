@@ -106,17 +106,15 @@ export default function AskPanditWidget() {
         action = null;
       }
 
-      if (action?.type === "navigate" && action.path) {
+      const shouldNavigate = action?.type === "navigate" && action.path;
+      if (shouldNavigate) {
         navigate(action.path);
+        setOpen(false);
       }
 
       const debugText = debugMode && debugHeader ? `\n\nDebug: ${debugHeader}` : `\n\nAnswered in ${elapsedSeconds}s`;
       const actionText = action?.label ? `${action.label}.\n\n` : "";
       await typeAssistantMessage(`${actionText}${text.trim() || "I do not have enough retrieved scripture to answer that."}${debugText}`);
-      if (action?.type === "navigate" && action.path) {
-        await sleep(700);
-        setOpen(false);
-      }
     } catch (error) {
       setMessages((current) => [
         ...current,
