@@ -196,6 +196,9 @@ const fetchVerseContext = async (question) => {
   return {
     context: formatContext(selected),
     citations: selected.map((verse) => `BG ${verse.chapter}.${verse.verse_ref}`),
+    source: 'verses',
+    row_count: rows.length,
+    selected_count: selected.length,
   };
 };
 
@@ -247,6 +250,7 @@ const fetchVectorContext = async (question, bookFilter) => {
       context: 'The Supabase vector scripture table is not configured for this Vercel function.',
       citations: [],
       available: false,
+      reason: 'missing_supabase_config',
     };
   }
 
@@ -272,6 +276,7 @@ const fetchVectorContext = async (question, bookFilter) => {
       context: 'The Supabase vector scripture table could not be searched yet.',
       citations: [],
       available: false,
+      reason: `rpc_${response.status}`,
     };
   }
 
@@ -282,18 +287,39 @@ const fetchVectorContext = async (question, bookFilter) => {
     context: formatVectorContext(chunks),
     citations: chunks.map(buildChunkCitation),
     available: true,
+    source: 'scripture_chunks',
+    row_count: chunks.length,
   };
 };
 
-const fetchScriptureContext = async (question, bookFilter) => {
+const fetchScriptureContext = async (question, bookFilter, debugInfo = {}) => {
   try {
     const vectorContext = await fetchVectorContext(question, bookFilter);
+    debugInfo.vector = {
+      available: vectorContext.available,
+      reason: vectorContext.reason || null,
+      row_count: vectorContext.row_count || 0,
+      citations: vectorContext.citations.length,
+    };
     if (vectorContext.available && vectorContext.citations.length) return vectorContext;
   } catch (error) {
+    debugInfo.vector = {
+      available: false,
+      reason: error instanceof Error ? error.message : 'unknown_vector_error',
+      row_count: 0,
+      citations: 0,
+    };
     console.warn('Vector scripture search failed, falling back to verses:', error);
   }
 
-  return fetchVerseContext(question);
+  const verseContext = await fetchVerseContext(question);
+  debugInfo.fallback = {
+    source: verseContext.source || 'verses',
+    row_count: verseContext.row_count || 0,
+    selected_count: verseContext.selected_count || 0,
+    citations: verseContext.citations.length,
+  };
+  return verseContext;
 };
 
 const buildPrompt = ({ question, visibleScreenText, history, context }) => {
@@ -389,11 +415,12 @@ export default async function handler(req, res) {
 
   try {
     const metrics = {};
+    const retrievalDebug = {};
     const debug = body?.debug === true || req.headers['x-pandit-debug'] === '1';
     const visibleScreenText = String(body?.visible_screen_text || '').slice(0, MAX_VISIBLE_TEXT_CHARS);
     const history = Array.isArray(body?.history) ? body.history : [];
     const bookFilter = String(body?.book_filter || '').trim();
-    const { context, citations } = await timed('retrieve_ms', () => fetchScriptureContext(question, bookFilter), metrics);
+    const { context, citations, source } = await timed('retrieve_ms', () => fetchScriptureContext(question, bookFilter, retrievalDebug), metrics);
     const prompt = buildPrompt({ question, visibleScreenText, history, context });
     const { answer, model } = await timed('chat_ms', () => callHuggingFace(prompt), metrics);
     const citationText = citations.length ? `\n\nCitations: ${unique(citations).join(', ')}` : '';
@@ -403,6 +430,8 @@ export default async function handler(req, res) {
         ...metrics,
         model,
         context_citations: citations.length,
+        context_source: source || 'unknown',
+        retrieval: retrievalDebug,
       }));
     }
 
