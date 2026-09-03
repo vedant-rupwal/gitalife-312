@@ -2,6 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 
 const json = (res, status, body) => res.status(status).json(body);
 
+const parseRequestBody = (body) => {
+  if (!body) return {};
+  if (typeof body !== 'string') return body;
+  try {
+    return JSON.parse(body);
+  } catch {
+    return {};
+  }
+};
+
 const escapeHtml = (value = '') => String(value)
   .replace(/&/g, '&amp;')
   .replace(/</g, '&lt;')
@@ -159,7 +169,7 @@ export default async function handler(req, res) {
     return json(res, 202, { skipped: true, reason: 'RESEND_API_KEY is not configured.' });
   }
 
-  const { kind, signup, token } = req.body || {};
+  const { kind, signup, token } = parseRequestBody(req.body);
   const serviceClient = createServiceClient();
   const recipients = await getAdminRecipients(serviceClient);
   if (recipients.length === 0) {
