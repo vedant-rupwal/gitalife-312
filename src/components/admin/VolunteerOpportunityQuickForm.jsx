@@ -32,6 +32,7 @@ export default function VolunteerOpportunityQuickForm({ event, onCreated }) {
     try {
       await appClient.entities.VolunteerOpportunity.create({
         event_id: event?.id || null,
+        hub_id: event?.hub_id || null,
         title: form.title.trim(),
         description: form.description.trim() || null,
         role_details: form.role_details.trim() || null,

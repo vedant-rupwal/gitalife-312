@@ -6,6 +6,7 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import HubInfoForm from "@/components/admin/HubInfoForm";
 import HubEventsManager from "@/components/admin/HubEventsManager";
 import HubContactsManager from "@/components/admin/HubContactsManager";
+import AdminVolunteerOpportunities from "@/components/admin/AdminVolunteerOpportunities";
 import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
 
 export default function HubAdmin() {
@@ -41,7 +42,10 @@ export default function HubAdmin() {
             <HubInfoForm hubId={hubId} />
             <HubContactsManager hubId={hubId} />
           </div>
-          <HubEventsManager hubId={hubId} />
+          <div className="space-y-8">
+            <HubEventsManager hubId={hubId} />
+            <AdminVolunteerOpportunities hubId={hubId} />
+          </div>
         </div>
       </div>
     </div>

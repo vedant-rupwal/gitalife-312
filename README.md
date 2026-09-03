@@ -33,6 +33,8 @@ Run [supabase/migrations/event-image-upload.sql](./supabase/migrations/event-ima
 
 Run [supabase/migrations/hub-contacts.sql](./supabase/migrations/hub-contacts.sql) to create the hub contact form submissions table.
 
+Run [supabase/migrations/standalone-hub-volunteer-opportunities.sql](./supabase/migrations/standalone-hub-volunteer-opportunities.sql) to let hub admins create volunteer opportunities that are tied to a hub without being linked to an event.
+
 Run [supabase/scripture_vectors.sql](./supabase/scripture_vectors.sql) to create the `scripture_chunks` pgvector table and search function for Ask the Pandit.
 
 Required Supabase project settings:

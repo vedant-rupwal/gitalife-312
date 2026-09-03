@@ -4,6 +4,7 @@ alter table public.community_events
 create table if not exists public.volunteer_opportunities (
   id uuid primary key default gen_random_uuid(),
   event_id uuid references public.community_events(id) on delete set null,
+  hub_id uuid references public.hubs(id) on delete set null,
   title text not null,
   description text,
   role_details text,
@@ -15,6 +16,15 @@ create table if not exists public.volunteer_opportunities (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.volunteer_opportunities
+  add column if not exists hub_id uuid references public.hubs(id) on delete set null;
+
+update public.volunteer_opportunities o
+set hub_id = e.hub_id
+from public.community_events e
+where o.event_id = e.id
+  and o.hub_id is null;
 
 create table if not exists public.volunteer_signups (
   id uuid primary key default gen_random_uuid(),
@@ -74,6 +84,7 @@ create policy "Admins manage volunteer opportunities"
 on public.volunteer_opportunities for all
 using (
   public.is_admin()
+  or public.can_manage_hub(hub_id)
   or exists (
     select 1
     from public.community_events e
@@ -82,6 +93,7 @@ using (
 )
 with check (
   public.is_admin()
+  or public.can_manage_hub(hub_id)
   or exists (
     select 1
     from public.community_events e
@@ -103,6 +115,7 @@ using (
     select 1
     from public.volunteer_opportunities o
     left join public.community_events e on e.id = o.event_id
-    where o.id = opportunity_id and public.can_manage_hub(e.hub_id)
+    where o.id = opportunity_id
+      and (public.can_manage_hub(o.hub_id) or public.can_manage_hub(e.hub_id))
   )
 );

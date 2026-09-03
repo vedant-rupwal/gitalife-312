@@ -23,7 +23,7 @@ const toDatetimeLocal = (value) => {
   return localDate.toISOString().slice(0, 16);
 };
 
-export default function AdminVolunteerOpportunities({ initialEvent = null, onCreated }) {
+export default function AdminVolunteerOpportunities({ hubId = null, initialEvent = null, onCreated }) {
   const [events, setEvents] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [signupsByOpportunity, setSignupsByOpportunity] = useState({});
@@ -38,12 +38,16 @@ export default function AdminVolunteerOpportunities({ initialEvent = null, onCre
       appClient.entities.CommunityEvent.list("event_date", 100).catch(() => []),
       appClient.entities.VolunteerOpportunity.list("starts_at", 100).catch(() => []),
     ]);
-    setEvents(eventRows);
-    setOpportunities(opportunityRows);
+    const scopedEvents = hubId ? eventRows.filter((event) => event.hub_id === hubId) : eventRows;
+    const scopedEventIds = new Set(scopedEvents.map((event) => event.id));
+    setEvents(scopedEvents);
+    setOpportunities(hubId
+      ? opportunityRows.filter((opportunity) => opportunity.hub_id === hubId || scopedEventIds.has(opportunity.event_id))
+      : opportunityRows);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [hubId]);
 
   useEffect(() => {
     if (!initialEvent) return;
@@ -61,8 +65,10 @@ export default function AdminVolunteerOpportunities({ initialEvent = null, onCre
     setSaving(true);
     setMsg("");
     try {
+      const linkedEvent = events.find((eventItem) => eventItem.id === form.event_id);
       await appClient.entities.VolunteerOpportunity.create({
         event_id: form.event_id || null,
+        hub_id: hubId || linkedEvent?.hub_id || null,
         title: form.title.trim(),
         description: form.description.trim() || null,
         role_details: form.role_details.trim() || null,
@@ -132,6 +138,7 @@ export default function AdminVolunteerOpportunities({ initialEvent = null, onCre
                   <div className="min-w-0">
                     <p className="font-heading text-sm font-bold text-navy">{opportunity.title}</p>
                     <p className="font-body text-xs text-navy/50">{opportunity.location || "Location coming soon"} - {opportunity.starts_at ? new Date(opportunity.starts_at).toLocaleDateString() : "Flexible"}</p>
+                    {!opportunity.event_id && <p className="mt-1 font-body text-xs text-navy/40">Standalone opportunity</p>}
                     <p className="mt-1 font-body text-xs text-saffron">{opportunity.signup_count || 0}{opportunity.needed_count ? `/${opportunity.needed_count}` : ""} volunteers signed up</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
