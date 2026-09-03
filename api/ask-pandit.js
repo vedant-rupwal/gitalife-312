@@ -1,4 +1,9 @@
-const DEFAULT_HF_MODEL = 'Qwen/Qwen2.5-7B-Instruct:fastest';
+const DEFAULT_HF_MODEL = 'openai/gpt-oss-20b:fastest';
+const FALLBACK_HF_MODELS = [
+  DEFAULT_HF_MODEL,
+  'openai/gpt-oss-120b:fastest',
+  'Qwen/Qwen2.5-7B-Instruct:fastest',
+];
 const DEFAULT_HF_EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2';
 const HF_ROUTER_BASE_URL = 'https://router.huggingface.co/v1';
 const HF_INFERENCE_BASE_URL = 'https://router.huggingface.co/hf-inference/models';
@@ -62,16 +67,17 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
 };
 
 const normalizeChatModel = (rawModel) => {
-  const model = (rawModel || DEFAULT_HF_MODEL).trim();
+  const model = (rawModel || DEFAULT_HF_MODEL).trim().replace(/-Turbo(?=(:|$))/i, '');
   if (!model) return DEFAULT_HF_MODEL;
-
-  if (model.endsWith('-Turbo')) {
-    return model.replace(/-Turbo$/, ':fastest');
-  }
 
   if (!model.includes(':')) return `${model}:fastest`;
 
   return model;
+};
+
+const getChatModelCandidates = () => {
+  const configuredModel = normalizeChatModel(getEnv('HF_MODEL'));
+  return unique([configuredModel, ...FALLBACK_HF_MODELS]);
 };
 
 const getSupabaseConfig = () => ({
@@ -221,7 +227,8 @@ const fetchQueryEmbedding = async (text) => {
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data?.error?.message || data?.message || data?.error || 'Hugging Face embedding request failed.');
+    const message = typeof data?.error === 'string' ? data.error : data?.error?.message;
+    throw new Error(message || data?.message || 'Hugging Face embedding request failed.');
   }
 
   const embedding = normalizeEmbeddingResponse(data);
@@ -312,13 +319,12 @@ const buildPrompt = ({ question, visibleScreenText, history, context }) => {
   ].join('\n');
 };
 
-const callHuggingFace = async (prompt) => {
+const callHuggingFaceModel = async (prompt, model) => {
   const token = getEnv('HF_TOKEN', 'HUGGING_FACE_TOKEN');
   if (!token) {
     throw new Error('Missing HF_TOKEN in Vercel environment variables.');
   }
 
-  const model = normalizeChatModel(getEnv('HF_MODEL'));
   const response = await fetchWithTimeout(
     `${HF_ROUTER_BASE_URL}/chat/completions`,
     {
@@ -346,10 +352,27 @@ const callHuggingFace = async (prompt) => {
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data?.error?.message || data?.message || 'Hugging Face request failed.');
+    const message = typeof data?.error === 'string' ? data.error : data?.error?.message;
+    throw new Error(message || data?.message || 'Hugging Face request failed.');
   }
 
   return data?.choices?.[0]?.message?.content?.trim();
+};
+
+const callHuggingFace = async (prompt) => {
+  const errors = [];
+
+  for (const model of getChatModelCandidates()) {
+    try {
+      const answer = await callHuggingFaceModel(prompt, model);
+      return { answer, model };
+    } catch (error) {
+      errors.push(`${model}: ${error instanceof Error ? error.message : 'failed'}`);
+      console.warn(`Hugging Face chat model failed for ${model}:`, error);
+    }
+  }
+
+  throw new Error(`All Hugging Face chat models failed. ${errors.join(' | ')}`);
 };
 
 export default async function handler(req, res) {
@@ -372,13 +395,13 @@ export default async function handler(req, res) {
     const bookFilter = String(body?.book_filter || '').trim();
     const { context, citations } = await timed('retrieve_ms', () => fetchScriptureContext(question, bookFilter), metrics);
     const prompt = buildPrompt({ question, visibleScreenText, history, context });
-    const answer = await timed('chat_ms', () => callHuggingFace(prompt), metrics);
+    const { answer, model } = await timed('chat_ms', () => callHuggingFace(prompt), metrics);
     const citationText = citations.length ? `\n\nCitations: ${unique(citations).join(', ')}` : '';
 
     if (debug) {
       res.setHeader('x-pandit-debug', JSON.stringify({
         ...metrics,
-        model: normalizeChatModel(getEnv('HF_MODEL')),
+        model,
         context_citations: citations.length,
       }));
     }
