@@ -82,8 +82,48 @@ const getChatModelCandidates = () => {
 
 const getSupabaseConfig = () => ({
   url: getEnv('SUPABASE_URL', 'VITE_SUPABASE_URL').replace(/\/+$/, ''),
-  key: getEnv('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY'),
+  keys: unique([
+    getEnv('SUPABASE_SERVICE_ROLE_KEY'),
+    getEnv('SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY'),
+  ].filter(Boolean)),
 });
+
+const fetchSupabase = async (path, options = {}, timeoutMs) => {
+  const { url: supabaseUrl, keys } = getSupabaseConfig();
+  if (!supabaseUrl || !keys.length) {
+    return {
+      response: null,
+      keyIndex: -1,
+      error: 'missing_supabase_config',
+    };
+  }
+
+  let lastText = '';
+
+  for (let index = 0; index < keys.length; index += 1) {
+    const key = keys[index];
+    const response = await fetchWithTimeout(`${supabaseUrl}${path}`, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        apikey: key,
+        authorization: `Bearer ${key}`,
+      },
+    }, timeoutMs);
+
+    if (response.status !== 401 && response.status !== 403) {
+      return { response, keyIndex: index, error: null };
+    }
+
+    lastText = await response.text();
+  }
+
+  return {
+    response: null,
+    keyIndex: keys.length - 1,
+    error: lastText || 'supabase_auth_failed',
+  };
+};
 
 const buildChunkCitation = (chunk) => {
   if (chunk.citation) return chunk.citation;
@@ -147,29 +187,32 @@ const formatContext = (verses) => {
 };
 
 const fetchVerseContext = async (question) => {
-  const { url: supabaseUrl, key: supabaseKey } = getSupabaseConfig();
+  const result = await fetchSupabase(
+    `/rest/v1/verses?select=chapter,verse_ref,verse_number,sanskrit,transliteration,translation,source_url&is_active=eq.true&limit=${MAX_VERSES}`,
+    {},
+  );
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!result.response) {
     return {
       context: 'The Supabase verse table is not configured for this Vercel function.',
       citations: [],
+      source: 'verses',
+      row_count: 0,
+      selected_count: 0,
+      reason: result.error,
     };
   }
 
-  const response = await fetch(
-    `${supabaseUrl.replace(/\/+$/, '')}/rest/v1/verses?select=chapter,verse_ref,verse_number,sanskrit,transliteration,translation,source_url&is_active=eq.true&limit=${MAX_VERSES}`,
-    {
-      headers: {
-        apikey: supabaseKey,
-        authorization: `Bearer ${supabaseKey}`,
-      },
-    },
-  );
+  const { response } = result;
 
   if (!response.ok) {
     return {
       context: `The Supabase verse table could not be loaded. Status ${response.status}.`,
       citations: [],
+      source: 'verses',
+      row_count: 0,
+      selected_count: 0,
+      reason: `rest_${response.status}`,
     };
   }
 
@@ -243,9 +286,9 @@ const fetchQueryEmbedding = async (text) => {
 };
 
 const fetchVectorContext = async (question, bookFilter) => {
-  const { url: supabaseUrl, key: supabaseKey } = getSupabaseConfig();
+  const { url: supabaseUrl, keys } = getSupabaseConfig();
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!supabaseUrl || !keys.length) {
     return {
       context: 'The Supabase vector scripture table is not configured for this Vercel function.',
       citations: [],
@@ -255,11 +298,9 @@ const fetchVectorContext = async (question, bookFilter) => {
   }
 
   const queryEmbedding = await fetchQueryEmbedding(question);
-  const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/rpc/match_scripture_chunks`, {
+  const result = await fetchSupabase('/rest/v1/rpc/match_scripture_chunks', {
     method: 'POST',
     headers: {
-      apikey: supabaseKey,
-      authorization: `Bearer ${supabaseKey}`,
       'content-type': 'application/json',
     },
     body: JSON.stringify({
@@ -268,6 +309,17 @@ const fetchVectorContext = async (question, bookFilter) => {
       book_filter: bookFilter ? [bookFilter] : null,
     }),
   }, VECTOR_SEARCH_TIMEOUT_MS);
+
+  const { response } = result;
+
+  if (!response) {
+    return {
+      context: 'The Supabase vector scripture table could not be searched yet.',
+      citations: [],
+      available: false,
+      reason: result.error,
+    };
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
