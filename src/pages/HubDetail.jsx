@@ -47,17 +47,17 @@ export default function HubDetail() {
             {locationLabel && (
               <span className="inline-flex items-center gap-1 rounded-full bg-saffron/10 px-3 py-1 font-heading text-xs font-semibold text-saffron mb-3"><MapPin className="h-3 w-3" />{locationLabel}</span>
             )}
-            <h1 className="font-heading text-3xl font-bold text-navy mb-3">{hub.name}</h1>
-            <p className="font-body text-base text-navy/70 mb-6">{hub.description || "Hub details coming soon."}</p>
-            <div className="space-y-3 mb-6">
+            <h1 className="font-heading text-4xl font-bold text-navy mb-4">{hub.name}</h1>
+            <p className="font-body text-xl leading-relaxed text-navy/70 mb-7">{hub.description || "Hub details coming soon."}</p>
+            <div className="space-y-4 mb-7">
               {meetingLabel && (
-                <div className="flex items-center gap-3 text-sm text-navy/80"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-saffron/10 text-saffron"><Clock className="h-4 w-4" /></div>{meetingLabel}</div>
+                <div className="flex items-center gap-4 text-lg text-navy/80"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-saffron/10 text-saffron"><Clock className="h-5 w-5" /></div>{meetingLabel}</div>
               )}
               {hub.coordinator_name && (
-                <div className="flex items-center gap-3 text-sm text-navy/80"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-saffron/10 text-saffron"><User className="h-4 w-4" /></div>{hub.coordinator_name}</div>
+                <div className="flex items-center gap-4 text-lg text-navy/80"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-saffron/10 text-saffron"><User className="h-5 w-5" /></div>{hub.coordinator_name}</div>
               )}
               {hub.coordinator_contact && (
-                <div className="flex items-center gap-3 text-sm text-navy/80"><div className="flex h-9 w-9 items-center justify-center rounded-lg bg-river/10 text-river"><Phone className="h-4 w-4" /></div>{hub.coordinator_contact}</div>
+                <div className="flex items-center gap-4 text-lg text-navy/80"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-river/10 text-river"><Phone className="h-5 w-5" /></div>{hub.coordinator_contact}</div>
               )}
             </div>
             {hub.whatsapp_link && (
