@@ -1,7 +1,10 @@
-const DEFAULT_HF_MODEL = 'Qwen/Qwen2.5-7B-Instruct';
+const DEFAULT_HF_MODEL = 'Qwen/Qwen2.5-7B-Instruct:fastest';
 const DEFAULT_HF_EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2';
 const HF_ROUTER_BASE_URL = 'https://router.huggingface.co/v1';
 const HF_INFERENCE_BASE_URL = 'https://router.huggingface.co/hf-inference/models';
+const CHAT_TIMEOUT_MS = 25000;
+const EMBEDDING_TIMEOUT_MS = 12000;
+const VECTOR_SEARCH_TIMEOUT_MS = 8000;
 const MAX_VISIBLE_TEXT_CHARS = 6000;
 const MAX_HISTORY_ITEMS = 8;
 const MAX_VERSES = 750;
@@ -34,6 +37,42 @@ const tokenize = (value = '') =>
     .filter((token) => token.length > 2);
 
 const unique = (items) => [...new Set(items)];
+
+const timed = async (label, work, metrics) => {
+  const start = Date.now();
+  try {
+    return await work();
+  } finally {
+    metrics[label] = Date.now() - start;
+  }
+};
+
+const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const normalizeChatModel = (rawModel) => {
+  const model = (rawModel || DEFAULT_HF_MODEL).trim();
+  if (!model) return DEFAULT_HF_MODEL;
+
+  if (model.endsWith('-Turbo')) {
+    return model.replace(/-Turbo$/, ':fastest');
+  }
+
+  if (!model.includes(':')) return `${model}:fastest`;
+
+  return model;
+};
 
 const getSupabaseConfig = () => ({
   url: getEnv('SUPABASE_URL', 'VITE_SUPABASE_URL').replace(/\/+$/, ''),
@@ -167,7 +206,7 @@ const fetchQueryEmbedding = async (text) => {
   if (!token) throw new Error('Missing HF_TOKEN in Vercel environment variables.');
 
   const model = getEnv('HF_EMBEDDING_MODEL') || DEFAULT_HF_EMBEDDING_MODEL;
-  const response = await fetch(`${HF_INFERENCE_BASE_URL}/${model}/pipeline/feature-extraction`, {
+  const response = await fetchWithTimeout(`${HF_INFERENCE_BASE_URL}/${model}/pipeline/feature-extraction`, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${token}`,
@@ -178,7 +217,7 @@ const fetchQueryEmbedding = async (text) => {
       normalize: true,
       truncate: true,
     }),
-  });
+  }, EMBEDDING_TIMEOUT_MS);
 
   const data = await response.json();
   if (!response.ok) {
@@ -205,7 +244,7 @@ const fetchVectorContext = async (question, bookFilter) => {
   }
 
   const queryEmbedding = await fetchQueryEmbedding(question);
-  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/match_scripture_chunks`, {
+  const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/rpc/match_scripture_chunks`, {
     method: 'POST',
     headers: {
       apikey: supabaseKey,
@@ -217,7 +256,7 @@ const fetchVectorContext = async (question, bookFilter) => {
       match_count: MAX_CONTEXT_CHUNKS,
       book_filter: bookFilter ? [bookFilter] : null,
     }),
-  });
+  }, VECTOR_SEARCH_TIMEOUT_MS);
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -279,8 +318,8 @@ const callHuggingFace = async (prompt) => {
     throw new Error('Missing HF_TOKEN in Vercel environment variables.');
   }
 
-  const model = getEnv('HF_MODEL') || DEFAULT_HF_MODEL;
-  const response = await fetch(
+  const model = normalizeChatModel(getEnv('HF_MODEL'));
+  const response = await fetchWithTimeout(
     `${HF_ROUTER_BASE_URL}/chat/completions`,
     {
       method: 'POST',
@@ -302,6 +341,7 @@ const callHuggingFace = async (prompt) => {
         temperature: 0.45,
       }),
     },
+    CHAT_TIMEOUT_MS,
   );
 
   const data = await response.json();
@@ -325,13 +365,23 @@ export default async function handler(req, res) {
   }
 
   try {
+    const metrics = {};
+    const debug = body?.debug === true || req.headers['x-pandit-debug'] === '1';
     const visibleScreenText = String(body?.visible_screen_text || '').slice(0, MAX_VISIBLE_TEXT_CHARS);
     const history = Array.isArray(body?.history) ? body.history : [];
     const bookFilter = String(body?.book_filter || '').trim();
-    const { context, citations } = await fetchScriptureContext(question, bookFilter);
+    const { context, citations } = await timed('retrieve_ms', () => fetchScriptureContext(question, bookFilter), metrics);
     const prompt = buildPrompt({ question, visibleScreenText, history, context });
-    const answer = await callHuggingFace(prompt);
+    const answer = await timed('chat_ms', () => callHuggingFace(prompt), metrics);
     const citationText = citations.length ? `\n\nCitations: ${unique(citations).join(', ')}` : '';
+
+    if (debug) {
+      res.setHeader('x-pandit-debug', JSON.stringify({
+        ...metrics,
+        model: normalizeChatModel(getEnv('HF_MODEL')),
+        context_citations: citations.length,
+      }));
+    }
 
     res.setHeader('content-type', 'text/plain; charset=utf-8');
     return res.status(200).send(`${answer || 'I do not have enough retrieved scripture to answer that.'}${citationText}`);

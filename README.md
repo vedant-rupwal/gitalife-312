@@ -65,12 +65,14 @@ Use the normal Vercel Vite defaults:
   - `SUPABASE_SERVICE_ROLE_KEY`
   - `VITE_GEOCODE_REGION` optional, defaults to `Chicago, IL, USA` for estimating hub map coordinates from campus/neighborhood text
   - `HF_TOKEN` for the floating Ask the Pandit scripture chatbot
-  - `HF_MODEL` optional, defaults to `Qwen/Qwen2.5-7B-Instruct`
+  - `HF_MODEL` optional, defaults to `Qwen/Qwen2.5-7B-Instruct:fastest`; do not use the Together `-Turbo` model name unless you have created a dedicated endpoint for it
   - `HF_EMBEDDING_MODEL` optional, defaults to `sentence-transformers/all-MiniLM-L6-v2`
 
 The service-role key is used only by the Vercel `/api/invite-user` server route for admin invites. Never prefix it with `VITE_`.
 
 The Ask the Pandit chatbot runs through the Vercel `/api/ask-pandit` server route. That route searches scripture vectors in Supabase and calls the Hugging Face model from the server, so no separate Hugging Face Space or hosted chatbot site is required.
+
+To debug chatbot response time, open the site with `?panditDebug=1`, ask a question, and the chat response will include retrieval and model timing details.
 
 `vercel.json` rewrites all routes to `index.html` so direct links such as `/hubs/:id`, `/login`, and `/reset-password` work.
 

@@ -16,6 +16,8 @@ const getVisibleScreenText = () =>
     .trim()
     .slice(0, 6000);
 
+const isDebugMode = () => new URLSearchParams(window.location.search).has("panditDebug");
+
 export default function AskPanditWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState(() => {
@@ -43,9 +45,11 @@ export default function AskPanditWidget() {
     if (!userQuestion || loading) return;
 
     const nextMessages = [...messages, { role: "user", text: userQuestion }];
+    const debugMode = isDebugMode();
     setMessages(nextMessages);
     setQuestion("");
     setLoading(true);
+    const startedAt = performance.now();
 
     try {
       const response = await fetch("/api/ask-pandit", {
@@ -56,6 +60,7 @@ export default function AskPanditWidget() {
           visible_screen_text: getVisibleScreenText(),
           book_filter: bookFilter || null,
           history: nextMessages,
+          debug: debugMode,
         }),
       });
 
@@ -69,7 +74,16 @@ export default function AskPanditWidget() {
         }
         throw new Error(message);
       }
-      setMessages((current) => [...current, { role: "assistant", text: text.trim() || "I do not have enough retrieved scripture to answer that." }]);
+      const elapsedSeconds = ((performance.now() - startedAt) / 1000).toFixed(1);
+      const debugHeader = response.headers.get("x-pandit-debug");
+      const debugText = debugMode && debugHeader ? `\n\nDebug: ${debugHeader}` : `\n\nAnswered in ${elapsedSeconds}s`;
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          text: `${text.trim() || "I do not have enough retrieved scripture to answer that."}${debugText}`,
+        },
+      ]);
     } catch (error) {
       setMessages((current) => [
         ...current,
