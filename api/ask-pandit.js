@@ -480,6 +480,34 @@ const determineNavigationAction = (question, websiteContext) => {
   return null;
 };
 
+const isWebsiteQuestion = (question, navigationAction) => {
+  if (navigationAction) return true;
+
+  return textIncludesAny(normalizeText(question), [
+    'website',
+    'site',
+    'gitalife',
+    'hub',
+    'hubs',
+    'event',
+    'events',
+    'kirtan',
+    'retreat',
+    'volunteer',
+    'volunteering',
+    'impact',
+    'gallery',
+    'photos',
+    'signup',
+    'sign up',
+    'where is',
+    'when is',
+    'show me',
+    'open',
+    'take me',
+  ]);
+};
+
 const normalizeEmbeddingResponse = (data) => {
   if (Array.isArray(data) && data.every((item) => typeof item === 'number')) return data;
   if (Array.isArray(data) && Array.isArray(data[0])) return data[0];
@@ -615,7 +643,7 @@ const fetchScriptureContext = async (question, bookFilter, debugInfo = {}) => {
   return verseContext;
 };
 
-const buildPrompt = ({ question, visibleScreenText, history, scriptureContext, websiteContext }) => {
+const buildPrompt = ({ question, visibleScreenText, history, scriptureContext, websiteContext, websiteQuestion, navigationAction }) => {
   const recentHistory = history
     .slice(-MAX_HISTORY_ITEMS)
     .map((message) => `${message.role === 'user' ? 'User' : 'Assistant'}: ${String(message.text || '').slice(0, 900)}`)
@@ -629,6 +657,9 @@ const buildPrompt = ({ question, visibleScreenText, history, scriptureContext, w
     'Do not use outside traditions, speculative interpretations, generic Hinduism, Advaita, New Age ideas, or non-ISKCON commentary as authority.',
     'If the retrieved scripture context does not contain enough information for a scriptural claim, say that you do not have enough retrieved Srila Prabhupada/ISKCON scripture context to answer fully.',
     'For questions about this website, GitaLife 312, events, hubs, volunteering, impact, navigation, or signups, you may answer from the website context and current page text below.',
+    'If this is a website or navigation question, focus on helping the visitor use the site. Do not force a scripture citation into the answer.',
+    navigationAction ? `The website will navigate for the visitor: ${navigationAction.label} (${navigationAction.path}). Briefly acknowledge that naturally.` : '',
+    websiteQuestion ? 'This user question is classified as a website/navigation question.' : 'This user question is classified as a scripture/philosophy/practice question.',
     'Keep the answer concise, practical, and natural, like an ongoing conversation.',
     '',
     `Current page text: ${visibleScreenText || 'No page text provided.'}`,
@@ -640,7 +671,7 @@ const buildPrompt = ({ question, visibleScreenText, history, scriptureContext, w
     `Retrieved Srila Prabhupada/ISKCON scripture context:\n${scriptureContext}`,
     '',
     `User question: ${question}`,
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 };
 
 const callHuggingFaceModel = async (prompt, model) => {
@@ -727,9 +758,18 @@ export default async function handler(req, res) {
       metrics,
     );
     const navigationAction = determineNavigationAction(question, websiteContext);
-    const prompt = buildPrompt({ question, visibleScreenText, history, scriptureContext, websiteContext: websiteContext.text });
+    const websiteQuestion = isWebsiteQuestion(question, navigationAction);
+    const prompt = buildPrompt({
+      question,
+      visibleScreenText,
+      history,
+      scriptureContext,
+      websiteContext: websiteContext.text,
+      websiteQuestion,
+      navigationAction,
+    });
     const { answer, model } = await timed('chat_ms', () => callHuggingFace(prompt), metrics);
-    const citationText = citations.length ? `\n\nCitations: ${unique(citations).join(', ')}` : '';
+    const citationText = !websiteQuestion && citations.length ? `\n\nCitations: ${unique(citations).join(', ')}` : '';
 
     if (debug) {
       res.setHeader('x-pandit-debug', JSON.stringify({
