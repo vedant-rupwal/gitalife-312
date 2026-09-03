@@ -199,6 +199,7 @@ export default async function handler(req, res) {
 }
 
 const sendEmail = async ({ res, recipients, replyTo, message }) => {
+  const resendApiKey = process.env.RESEND_API_KEY;
   const from = process.env.SIGNUP_NOTIFICATION_FROM || 'GitaLife 312 <onboarding@resend.dev>';
 
   const response = await fetch('https://api.resend.com/emails', {
