@@ -5,6 +5,7 @@ import { MapPin, Clock, MessageCircle, ArrowLeft, User, Phone, Loader2, Calendar
 import EventCard from "@/components/events/EventCard";
 import EventSignupModal from "@/components/events/EventSignupModal";
 import InstagramWidget from "@/components/hubs/InstagramWidget";
+import HubContactCard from "@/components/hubs/HubContactCard";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { defaultHubs } from "@/data/defaultHubs";
 
@@ -69,8 +70,14 @@ export default function HubDetail() {
                 <InstagramWidget handle={hub.instagram_handle} events={events} />
               </div>
             )}
+            <div className="mt-6 hidden lg:block">
+              <HubContactCard hub={hub} />
+            </div>
           </div>
           <div className="lg:col-span-2 space-y-10">
+            <div className="lg:hidden">
+              <HubContactCard hub={hub} />
+            </div>
             <div>
               <SectionHeading eyebrow="Gatherings" title="Upcoming Events" />
               <div className="grid sm:grid-cols-2 gap-6">

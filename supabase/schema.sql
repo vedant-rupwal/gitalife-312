@@ -86,6 +86,19 @@ create table if not exists public.event_signups (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.hub_contacts (
+  id uuid primary key default gen_random_uuid(),
+  hub_id uuid not null references public.hubs(id) on delete cascade,
+  hub_name text,
+  name text not null,
+  email text not null,
+  phone text,
+  how_found text,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.volunteer_opportunities (
   id uuid primary key default gen_random_uuid(),
   event_id uuid references public.community_events(id) on delete set null,
@@ -280,6 +293,7 @@ begin
     'hubs',
     'community_events',
     'event_signups',
+    'hub_contacts',
     'impact_stats',
     'japa_logs',
     'verses',
@@ -296,6 +310,7 @@ alter table public.profiles enable row level security;
 alter table public.hubs enable row level security;
 alter table public.community_events enable row level security;
 alter table public.event_signups enable row level security;
+alter table public.hub_contacts enable row level security;
 alter table public.impact_stats enable row level security;
 alter table public.japa_logs enable row level security;
 alter table public.verses enable row level security;
@@ -304,10 +319,10 @@ alter table public.volunteer_signups enable row level security;
 
 grant usage on schema public to anon, authenticated;
 grant select on public.hubs, public.community_events, public.impact_stats, public.verses, public.volunteer_opportunities to anon, authenticated;
-grant insert on public.event_signups, public.volunteer_signups to anon, authenticated;
+grant insert on public.event_signups, public.hub_contacts, public.volunteer_signups to anon, authenticated;
 grant select, insert, update, delete on public.japa_logs to authenticated;
 grant select on public.profiles to authenticated;
-grant select, insert, update, delete on public.hubs, public.community_events, public.event_signups, public.impact_stats, public.verses, public.volunteer_opportunities, public.volunteer_signups to authenticated;
+grant select, insert, update, delete on public.hubs, public.community_events, public.event_signups, public.hub_contacts, public.impact_stats, public.verses, public.volunteer_opportunities, public.volunteer_signups to authenticated;
 grant update on public.profiles to authenticated;
 
 drop policy if exists "Profiles are visible to self and admins" on public.profiles;
@@ -379,6 +394,16 @@ using (
     where e.id = event_id and public.can_manage_hub(e.hub_id)
   )
 );
+
+drop policy if exists "Hub contacts are public to create" on public.hub_contacts;
+create policy "Hub contacts are public to create"
+on public.hub_contacts for insert
+with check (true);
+
+drop policy if exists "Admins can read hub contacts" on public.hub_contacts;
+create policy "Admins can read hub contacts"
+on public.hub_contacts for select
+using (public.is_admin() or public.can_manage_hub(hub_id));
 
 drop policy if exists "Volunteer opportunities are public" on public.volunteer_opportunities;
 create policy "Volunteer opportunities are public"

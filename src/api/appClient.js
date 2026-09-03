@@ -21,6 +21,7 @@ const tableNames = {
   CommunityEvent: 'community_events',
   EventSignup: 'event_signups',
   Hub: 'hubs',
+  HubContact: 'hub_contacts',
   ImpactStat: 'impact_stats',
   JapaLog: 'japa_logs',
   User: 'profiles',

@@ -31,6 +31,8 @@ If you already ran the older schema, run [supabase/migrations/hub-location-and-i
 
 Run [supabase/migrations/event-image-upload.sql](./supabase/migrations/event-image-upload.sql) to create the public `event-images` Storage bucket for event image uploads.
 
+Run [supabase/migrations/hub-contacts.sql](./supabase/migrations/hub-contacts.sql) to create the hub contact form submissions table.
+
 Run [supabase/scripture_vectors.sql](./supabase/scripture_vectors.sql) to create the `scripture_chunks` pgvector table and search function for Ask the Pandit.
 
 Required Supabase project settings:
