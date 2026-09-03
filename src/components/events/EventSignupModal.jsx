@@ -17,13 +17,24 @@ export default function EventSignupModal({ event, onClose }) {
     setSaving(true);
     setError("");
     try {
-      await appClient.entities.EventSignup.create({
+      const signup = await appClient.entities.EventSignup.create({
         event_id: event.id,
         event_title: event.title,
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
       });
+      appClient.notifications.sendSignupNotification({
+        kind: "event",
+        signup,
+        item: {
+          id: event.id,
+          title: event.title,
+          date: event.event_date,
+          location: event.location,
+          hub_id: event.hub_id,
+        },
+      }).catch(() => {});
       setDone(true);
     } catch (e) {
       setError("Something went wrong. Please try again.");

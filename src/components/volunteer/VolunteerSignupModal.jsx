@@ -18,7 +18,7 @@ export default function VolunteerSignupModal({ opportunity, onClose }) {
     setSaving(true);
     setError("");
     try {
-      await appClient.entities.VolunteerSignup.create({
+      const signup = await appClient.entities.VolunteerSignup.create({
         opportunity_id: opportunity.id,
         opportunity_title: opportunity.title,
         name: form.name.trim(),
@@ -26,6 +26,17 @@ export default function VolunteerSignupModal({ opportunity, onClose }) {
         phone: form.phone.trim(),
         note: form.note.trim() || null,
       });
+      appClient.notifications.sendSignupNotification({
+        kind: "volunteer",
+        signup,
+        item: {
+          id: opportunity.id,
+          title: opportunity.title,
+          date: opportunity.starts_at,
+          location: opportunity.location,
+          hub_id: opportunity.hub_id,
+        },
+      }).catch(() => {});
       setDone(true);
     } catch {
       setError("Something went wrong. Please try again.");

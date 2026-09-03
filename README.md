@@ -71,12 +71,17 @@ Use the normal Vercel Vite defaults:
   - `HF_TOKEN` for the floating Ask the Pandit scripture chatbot
   - `HF_MODEL` optional, defaults to `openai/gpt-oss-20b:fastest`; do not use the Together `-Turbo` model name unless you have created a dedicated endpoint for it
   - `HF_EMBEDDING_MODEL` optional, defaults to `sentence-transformers/all-MiniLM-L6-v2`
+  - `RESEND_API_KEY` for email notifications when someone signs up for an event or volunteer opportunity
+  - `SIGNUP_NOTIFICATION_EMAILS` optional comma-separated recipient list; if omitted, root admin emails from `profiles` are used
+  - `SIGNUP_NOTIFICATION_FROM` optional verified sender, for example `GitaLife 312 <hello@yourdomain.com>`
 
 The service-role key is used only by the Vercel `/api/invite-user` server route for admin invites. Never prefix it with `VITE_`.
 
 The Ask the Pandit chatbot runs through the Vercel `/api/ask-pandit` server route. That route searches scripture vectors in Supabase and calls the Hugging Face model from the server, so no separate Hugging Face Space or hosted chatbot site is required.
 
 To debug chatbot response time, open the site with `?panditDebug=1`, ask a question, and the chat response will include retrieval and model timing details.
+
+Signup notification emails run through the Vercel `/api/notify-signup` server route and Resend. Signups still save if Resend is not configured, but no notification email will be sent.
 
 `vercel.json` rewrites all routes to `index.html` so direct links such as `/hubs/:id`, `/login`, and `/reset-password` work.
 

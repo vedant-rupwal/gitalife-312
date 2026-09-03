@@ -198,6 +198,23 @@ const getAccessToken = async () => {
 export const appClient = {
   supabase,
 
+  notifications: {
+    async sendSignupNotification(payload) {
+      const response = await fetch('/api/notify-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Could not send signup notification.');
+      }
+
+      return response.json().catch(() => ({}));
+    },
+  },
+
   storage: {
     async uploadImage(file, bucketName) {
       if (!file) return null;
