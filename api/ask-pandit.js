@@ -167,7 +167,7 @@ const fetchQueryEmbedding = async (text) => {
   if (!token) throw new Error('Missing HF_TOKEN in Vercel environment variables.');
 
   const model = getEnv('HF_EMBEDDING_MODEL') || DEFAULT_HF_EMBEDDING_MODEL;
-  const response = await fetch(`${HF_INFERENCE_BASE_URL}/${model}`, {
+  const response = await fetch(`${HF_INFERENCE_BASE_URL}/${model}/pipeline/feature-extraction`, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${token}`,
@@ -240,8 +240,12 @@ const fetchVectorContext = async (question, bookFilter) => {
 };
 
 const fetchScriptureContext = async (question, bookFilter) => {
-  const vectorContext = await fetchVectorContext(question, bookFilter);
-  if (vectorContext.available && vectorContext.citations.length) return vectorContext;
+  try {
+    const vectorContext = await fetchVectorContext(question, bookFilter);
+    if (vectorContext.available && vectorContext.citations.length) return vectorContext;
+  } catch (error) {
+    console.warn('Vector scripture search failed, falling back to verses:', error);
+  }
 
   return fetchVerseContext(question);
 };
