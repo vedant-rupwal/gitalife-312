@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, Loader2, MessageCircle, RotateCcw, Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -172,7 +173,28 @@ export default function AskPanditWidget() {
                       : "bg-cream text-navy"
                   )}
                 >
-                  {message.text}
+                  {message.role === "assistant" ? (
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                        ul: ({ children }) => <ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">{children}</ul>,
+                        ol: ({ children }) => <ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0">{children}</ol>,
+                        li: ({ children }) => <li>{children}</li>,
+                        a: ({ children, href }) => (
+                          <a href={href} className="font-semibold text-saffron underline underline-offset-2" target="_blank" rel="noreferrer">
+                            {children}
+                          </a>
+                        ),
+                        table: ({ children }) => <div className="my-2 overflow-x-auto"><table className="min-w-full text-left text-xs">{children}</table></div>,
+                        th: ({ children }) => <th className="border-b border-navy/10 px-2 py-1 font-semibold">{children}</th>,
+                        td: ({ children }) => <td className="border-b border-navy/10 px-2 py-1 align-top">{children}</td>,
+                      }}
+                    >
+                      {message.text}
+                    </ReactMarkdown>
+                  ) : (
+                    message.text
+                  )}
                 </div>
               </div>
             ))}

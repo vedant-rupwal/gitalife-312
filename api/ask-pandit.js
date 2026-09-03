@@ -93,6 +93,21 @@ const tokenOverlapScore = (source, target) => {
   ), 0) / targetTokens.length;
 };
 
+const fieldMatchScore = (question, value) => {
+  const normalizedQuestion = normalizeText(question);
+  const normalizedValue = normalizeText(value);
+  if (!normalizedValue) return 0;
+  if (normalizedQuestion.includes(normalizedValue)) return 1;
+
+  const questionTokens = normalizedQuestion.split(' ');
+  const valueTokens = normalizedValue.split(' ').filter(Boolean);
+  if (valueTokens.some((token) => token.length >= 3 && questionTokens.includes(token))) {
+    return 0.8;
+  }
+
+  return tokenOverlapScore(normalizedQuestion, normalizedValue);
+};
+
 const timed = async (label, work, metrics) => {
   const start = Date.now();
   try {
@@ -398,17 +413,13 @@ const fetchWebsiteContext = async () => {
 };
 
 const findBestMatch = (question, items, fields) => {
-  const normalizedQuestion = normalizeText(question);
   let best = null;
 
   for (const item of items) {
-    const label = fields.map((field) => item[field]).filter(Boolean).join(' ');
-    const normalizedLabel = normalizeText(label);
-    if (!normalizedLabel) continue;
-
-    const score = normalizedQuestion.includes(normalizedLabel)
-      ? 1
-      : tokenOverlapScore(normalizedQuestion, normalizedLabel);
+    const score = Math.max(
+      ...fields.map((field) => fieldMatchScore(question, item[field])),
+      fieldMatchScore(question, fields.map((field) => item[field]).filter(Boolean).join(' ')),
+    );
 
     if (!best || score > best.score) best = { item, score };
   }
@@ -423,7 +434,7 @@ const determineNavigationAction = (question, websiteContext) => {
   const volunteerOpportunities = websiteContext?.volunteerOpportunities || [];
 
   const matchedHub = findBestMatch(question, hubs, ['name', 'campus', 'neighborhood']);
-  if (matchedHub?.id && textIncludesAny(normalizedQuestion, ['hub', 'center', 'campus', 'neighborhood', normalizeText(matchedHub.name)])) {
+  if (matchedHub?.id && textIncludesAny(normalizedQuestion, ['hub', 'center', 'campus', 'neighborhood', 'group', 'club', 'meet', 'meeting', 'class', 'session', normalizeText(matchedHub.name), normalizeText(matchedHub.campus)])) {
     return {
       type: 'navigate',
       path: `/hubs/${matchedHub.id}`,
@@ -652,6 +663,7 @@ const buildPrompt = ({ question, visibleScreenText, history, scriptureContext, w
   return [
     'You are Ask the Pandit for the GitaLife 312 website.',
     'Answer in clear, gentle English for students and young professionals, with a warm conversational tone.',
+    'Use simple formatting only: short paragraphs and brief bullets when useful. Do not use Markdown tables. Do not include stray backslashes or raw formatting symbols.',
     'Your theological viewpoint must be strictly ISKCON and Srila Prabhupada centered.',
     'For scripture, philosophy, theology, practice, Krishna consciousness, guru, devotional life, or meaning-of-life questions, use only the retrieved scriptures, translations, and purports provided below.',
     'Do not use outside traditions, speculative interpretations, generic Hinduism, Advaita, New Age ideas, or non-ISKCON commentary as authority.',
