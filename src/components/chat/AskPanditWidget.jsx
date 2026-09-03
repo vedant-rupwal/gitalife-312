@@ -113,6 +113,10 @@ export default function AskPanditWidget() {
       const debugText = debugMode && debugHeader ? `\n\nDebug: ${debugHeader}` : `\n\nAnswered in ${elapsedSeconds}s`;
       const actionText = action?.label ? `${action.label}.\n\n` : "";
       await typeAssistantMessage(`${actionText}${text.trim() || "I do not have enough retrieved scripture to answer that."}${debugText}`);
+      if (action?.type === "navigate" && action.path) {
+        await sleep(700);
+        setOpen(false);
+      }
     } catch (error) {
       setMessages((current) => [
         ...current,
@@ -129,7 +133,7 @@ export default function AskPanditWidget() {
   return (
     <div className="fixed bottom-24 right-4 z-[60] md:bottom-6 md:right-6">
       {open && (
-        <div className="mb-3 flex h-[min(620px,calc(100vh-8rem))] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-navy/10 bg-white shadow-2xl md:w-96">
+        <div className="mb-3 flex h-[min(560px,calc(100vh-8rem))] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-navy/10 bg-white shadow-2xl md:w-[22rem]">
           <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-saffron to-gold px-4 py-3 text-white">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/18">
