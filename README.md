@@ -124,6 +124,14 @@ That writes:
 
 Run `supabase/seed-verses.sql` in the Supabase SQL editor after `supabase/schema.sql`. If the SQL editor struggles with the large file, run the smaller files in `supabase/seed-verses/` in filename order from `001.sql` through `132.sql`.
 
+To create a smaller JSON file for the chatbot/content workflow with only transliteration and translation, run:
+
+```bash
+npm run scrape:gita-json
+```
+
+That writes `src/data/bhagavad-gita-verses.json`, which the home page uses for the daily random verse. It does not create vectors, SQL, word-for-word synonyms, Devanagari text, or purports.
+
 ## Import Existing Chroma Vectors
 
 The GooglePlugin Chroma database already contains vectorized scripture embeddings. To reuse those exact embeddings in Supabase, first run [supabase/scripture_vectors.sql](./supabase/scripture_vectors.sql), then run:

@@ -39,6 +39,18 @@ export const cleanVerseText = (value = "") =>
     .replace(/\s+/g, " ")
     .trim();
 
+export const cleanVerseBlockText = (value = "") =>
+  decodeHtml(value)
+    .replace(/class=(?:"|')?av-(?:devanagari|verse_text|translation|synonyms|purport)(?:"|')?\s*>?/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\s*\/?\s*div[^>]*>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
 export const formatDevanagari = (value = "") =>
   cleanVerseText(value)
     .replace(/\s*\u0964\s*/g, " \u0964\n")

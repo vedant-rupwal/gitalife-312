@@ -9,6 +9,7 @@
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "import:gita": "node scripts/import-vedabase-gita.mjs",
+    "scrape:gita-json": "python scripts/scrape-vedabase-gita-json.py",
     "typecheck": "tsc -p ./jsconfig.json",
     "preview": "vite preview"
   },
