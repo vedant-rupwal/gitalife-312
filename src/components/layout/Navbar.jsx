@@ -21,7 +21,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-navy/8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
-          <Link to="/" className="order-2 flex items-center gap-3 group md:order-none">
+          <Link to="/" className="order-2 flex flex-row-reverse items-center gap-3 group md:order-none md:flex-row">
             <BrandLogo className="h-14 w-14 border border-saffron/20 shadow-sm transition-transform group-hover:scale-105" />
             <div className="flex items-baseline gap-1.5 leading-none">
               <span className="font-heading text-2xl font-bold text-navy tracking-tight">GitaLife</span>
