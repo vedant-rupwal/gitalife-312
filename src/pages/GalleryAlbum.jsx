@@ -16,6 +16,7 @@ export default function GalleryAlbum() {
   }, [albumId]);
 
   const cover = useMemo(() => photos.find((photo) => photo.is_cover) || photos[0], [photos]);
+  const albumPhotos = useMemo(() => photos.filter((photo) => photo.id !== cover?.id), [cover?.id, photos]);
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-cream"><Loader2 className="h-8 w-8 animate-spin text-saffron" /></div>;
@@ -46,20 +47,28 @@ export default function GalleryAlbum() {
             <p className="mb-3 font-heading text-sm font-semibold uppercase tracking-wider text-saffron">Gallery Album</p>
             <h1 className="font-heading text-4xl font-bold text-navy lg:text-5xl">{cover.title}</h1>
             {cover.caption && <p className="mt-4 font-body text-lg leading-relaxed text-navy/65">{cover.caption}</p>}
-            <p className="mt-4 font-body text-sm text-navy/45">{photos.length} photo{photos.length === 1 ? "" : "s"}</p>
+            <p className="mt-4 font-body text-sm text-navy/45">{albumPhotos.length} additional photo{albumPhotos.length === 1 ? "" : "s"}</p>
           </div>
         </div>
       </section>
 
       <section className="py-12 lg:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {photos.map((photo) => (
-              <article key={photo.id} className="overflow-hidden rounded-2xl border border-navy/8 bg-white shadow-sm">
-                <img src={photo.image_url} alt={photo.title} className="aspect-[4/5] w-full object-cover" />
-              </article>
-            ))}
-          </div>
+          {albumPhotos.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-navy/15 bg-cream p-10 text-center">
+              <Camera className="mx-auto mb-3 h-10 w-10 text-navy/25" />
+              <p className="font-heading text-lg font-bold text-navy">No additional photos yet</p>
+              <p className="mt-2 font-body text-sm text-navy/55">Add more photos to this album from the admin gallery tab.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {albumPhotos.map((photo) => (
+                <article key={photo.id} className="overflow-hidden rounded-2xl border border-navy/8 bg-white shadow-sm">
+                  <img src={photo.image_url} alt={photo.title} className="aspect-[4/5] w-full object-cover" />
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>
