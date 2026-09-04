@@ -9,7 +9,8 @@ export default function Hero() {
         <div className="absolute top-0 right-0 w-1/2 h-full opacity-30">
           <img
             src="https://images.unsplash.com/photo-1474181487882-5abf3f0a1d1c?w=1200&q=80"
-            alt="Chicago skyline at golden hour"
+            alt=""
+            aria-hidden="true"
             className="w-full h-full object-cover"
           />
         </div>
