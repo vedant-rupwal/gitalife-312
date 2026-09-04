@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { appClient } from "@/api/appClient";
 import Hero from "@/components/home/Hero";
-import SocialGrid from "@/components/home/SocialGrid";
+import ElfsightInstagramFeed from "@/components/gallery/ElfsightInstagramFeed";
 import EventCard from "@/components/events/EventCard";
 import EventSignupModal from "@/components/events/EventSignupModal";
 import SectionHeading from "@/components/ui/SectionHeading";
@@ -128,7 +128,7 @@ export default function Home() {
             title="High-Vibe Moments"
             subtitle="Reels, event recaps, and community moments from @gitalife312."
           />
-          <SocialGrid />
+          <ElfsightInstagramFeed />
         </div>
       </section>
 
