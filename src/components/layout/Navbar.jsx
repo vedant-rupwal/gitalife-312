@@ -23,10 +23,7 @@ export default function Navbar() {
         <div className="flex h-20 items-center justify-between">
           <Link to="/" className="order-2 flex flex-row-reverse items-center gap-3 group md:order-none md:flex-row">
             <BrandLogo className="h-14 w-14 border border-saffron/20 shadow-sm transition-transform group-hover:scale-105" />
-            <div className="flex items-baseline gap-1.5 leading-none">
-              <span className="font-heading text-2xl font-bold text-navy tracking-tight">GitaLife</span>
-              <span className="font-heading text-2xl font-bold text-saffron tracking-tight">312</span>
-            </div>
+            <span className="font-heading text-2xl font-bold text-navy tracking-tight leading-none">GitaLife 312</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">

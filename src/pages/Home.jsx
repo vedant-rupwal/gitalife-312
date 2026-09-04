@@ -39,7 +39,7 @@ const involvementItems = [
   },
   {
     title: "Photo Gallery",
-    description: "Moments from the GitaLife community",
+    description: "Moments from the GitaLife 312 community",
     icon: Camera,
     to: "/gallery",
     color: "bg-navy",

@@ -1,4 +1,4 @@
-# GitaLife
+# GitaLife 312
 
 Standalone Vite + React app for Vercel with Supabase as the backend.
 

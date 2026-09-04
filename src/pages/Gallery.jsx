@@ -11,7 +11,7 @@ export default function Gallery() {
           <SectionHeading
             eyebrow="Gallery"
             title="Community Moments"
-            subtitle="Photos, reels, and event recaps from the GitaLife community."
+            subtitle="Photos, reels, and event recaps from the GitaLife 312 community."
           />
         </div>
       </section>

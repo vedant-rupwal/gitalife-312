@@ -11,10 +11,7 @@ export default function Footer() {
           <div className="md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
               <BrandLogo className="h-14 w-14 border border-white/20" />
-              <div className="flex items-baseline gap-1.5 leading-none">
-                <span className="font-heading text-2xl font-bold">GitaLife</span>
-                <span className="font-heading text-2xl font-bold text-saffron">312</span>
-              </div>
+              <span className="font-heading text-2xl font-bold leading-none">GitaLife 312</span>
             </div>
             <p className="font-display text-2xl text-white/90 leading-snug max-w-md">
               Ancient Wisdom.<br />WindyCity Rhythm.

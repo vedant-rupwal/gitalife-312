@@ -31,7 +31,7 @@ export default function Volunteering() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
         <SectionHeading
           eyebrow="Volunteer"
-          title="Serve With GitaLife"
+          title="Serve With GitaLife 312"
           subtitle="Find a seva opportunity, sign up, and a coordinator will follow up with the details."
         />
 
