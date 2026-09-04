@@ -214,6 +214,29 @@ export const appClient = {
 
       return response.json().catch(() => ({}));
     },
+
+    async sendAdminEmail(values = {}) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
+        throw new Error('You must be logged in as an admin to send emails.');
+      }
+
+      const response = await fetch('/api/send-admin-email', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Email send failed.');
+      }
+
+      return payload;
+    },
   },
 
   ai: {

@@ -85,7 +85,7 @@ To debug chatbot response time, open the site with `?panditDebug=1`, ask a quest
 
 Admin AI drafts run through the Vercel `/api/generate-admin-draft` server route. Root admins can use all hub data; hub admins can only generate drafts for hubs assigned to them.
 
-Signup notification emails run through the Vercel `/api/notifySignup` server route and Resend. Signups still save if Resend is not configured, but no notification email will be sent.
+Signup notification emails run through the Vercel `/api/notifySignup` server route and Resend. Admin audience emails run through `/api/send-admin-email`. Signups still save if Resend is not configured, but no notification email will be sent.
 
 `vercel.json` rewrites all routes to `index.html` so direct links such as `/hubs/:id`, `/login`, and `/reset-password` work.
 

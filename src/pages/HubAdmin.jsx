@@ -8,6 +8,7 @@ import HubEventsManager from "@/components/admin/HubEventsManager";
 import HubContactsManager from "@/components/admin/HubContactsManager";
 import AdminVolunteerOpportunities from "@/components/admin/AdminVolunteerOpportunities";
 import AdminAIDrafts from "@/components/admin/AdminAIDrafts";
+import AdminEmailSender from "@/components/admin/AdminEmailSender";
 import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
 
 export default function HubAdmin() {
@@ -46,6 +47,7 @@ export default function HubAdmin() {
           <div className="space-y-8">
             <HubEventsManager hubId={hubId} />
             <AdminVolunteerOpportunities hubId={hubId} />
+            <AdminEmailSender me={me} hubId={hubId} />
             <AdminAIDrafts me={me} hubId={hubId} />
           </div>
         </div>
