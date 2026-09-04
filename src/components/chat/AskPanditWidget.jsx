@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Loader2, MessageCircle, RotateCcw, Send, X } from "lucide-react";
+import { BookOpen, Loader2, MessageCircle, Minus, RotateCcw, Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const historyKey = "gitalife.askPandit.history";
@@ -146,6 +146,9 @@ export default function AskPanditWidget() {
               <button onClick={reset} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 hover:bg-white/25" aria-label="Clear chat">
                 <RotateCcw className="h-4 w-4" />
               </button>
+              <button onClick={() => setOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 hover:bg-white/25" aria-label="Minimize chat">
+                <Minus className="h-4 w-4" />
+              </button>
               <button onClick={() => setOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 hover:bg-white/25" aria-label="Close chat">
                 <X className="h-4 w-4" />
               </button>
@@ -234,13 +237,15 @@ export default function AskPanditWidget() {
         </div>
       )}
 
-      <button
-        onClick={() => setOpen((current) => !current)}
-        className="ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-navy text-white shadow-xl shadow-navy/20 transition-all hover:scale-105"
-        aria-label="Open Ask the Pandit chat"
-      >
-        {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-      </button>
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          className="ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-navy text-white shadow-xl shadow-navy/20 transition-all hover:scale-105"
+          aria-label="Open Ask the Pandit chat"
+        >
+          <MessageCircle className="h-6 w-6" />
+        </button>
+      )}
     </div>
   );
 }
