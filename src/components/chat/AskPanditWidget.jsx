@@ -33,7 +33,6 @@ export default function AskPanditWidget() {
     }
   });
   const [question, setQuestion] = useState("");
-  const [bookFilter, setBookFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesRef = useRef(null);
 
@@ -86,7 +85,6 @@ export default function AskPanditWidget() {
         body: JSON.stringify({
           user_question: userQuestion,
           visible_screen_text: getVisibleScreenText(),
-          book_filter: bookFilter || null,
           history: nextMessages,
           debug: debugMode,
         }),
@@ -159,18 +157,6 @@ export default function AskPanditWidget() {
                 <X className="h-4 w-4" />
               </button>
             </div>
-          </div>
-
-          <div className="border-b border-navy/8 bg-cream px-4 py-3">
-            <label className="block font-heading text-[11px] font-semibold uppercase tracking-wide text-navy/50">Book focus</label>
-            <select
-              value={bookFilter}
-              onChange={(event) => setBookFilter(event.target.value)}
-              className="mt-1 w-full rounded-xl border border-navy/10 bg-white px-3 py-2 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20"
-            >
-              <option value="">All available scripture</option>
-              <option value="Bhagavad-gita">Bhagavad-gita</option>
-            </select>
           </div>
 
           <div ref={messagesRef} className="flex-1 space-y-3 overflow-y-auto bg-white p-4">
