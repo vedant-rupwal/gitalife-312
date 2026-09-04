@@ -42,8 +42,10 @@ export default function Footer() {
               <li className="flex items-center gap-2 text-white/70">
                 <MapPin className="h-4 w-4 text-river" /> Chicago, IL 60601
               </li>
-              <li className="flex items-center gap-2 text-white/70">
-                <Mail className="h-4 w-4 text-river" /> hello@gitalife312.org
+              <li>
+                <a href="mailto:gitalife312@gmail.com" className="flex items-center gap-2 text-white/70 hover:text-white transition-colors">
+                  <Mail className="h-4 w-4 text-river" /> gitalife312@gmail.com
+                </a>
               </li>
               <li>
                 <a

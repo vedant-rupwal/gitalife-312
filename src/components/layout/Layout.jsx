@@ -2,7 +2,6 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import StickyActionBar from "@/components/layout/StickyActionBar";
 import AskPanditWidget from "@/components/chat/AskPanditWidget";
 
 export default function Layout() {
@@ -13,7 +12,6 @@ export default function Layout() {
         <Outlet />
       </main>
       <Footer />
-      <StickyActionBar />
       <AskPanditWidget />
     </div>
   );

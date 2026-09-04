@@ -9,6 +9,8 @@ const navLinks = [
   { label: "Events", path: "/events" },
   { label: "Hub", path: "/hubs" },
   { label: "Volunteer", path: "/volunteer" },
+  { label: "Gallery", path: "/gallery" },
+  { label: "Impact", path: "/impact" },
 ];
 
 export default function Navbar() {
@@ -19,7 +21,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-navy/8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 group">
+          <Link to="/" className="order-2 flex items-center gap-3 group md:order-none">
             <BrandLogo className="h-14 w-14 border border-saffron/20 shadow-sm transition-transform group-hover:scale-105" />
             <div className="flex items-baseline gap-1.5 leading-none">
               <span className="font-heading text-2xl font-bold text-navy tracking-tight">GitaLife</span>
@@ -55,7 +57,7 @@ export default function Navbar() {
 
           <button
             onClick={() => setOpen(!open)}
-            className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg text-navy"
+            className="order-1 flex h-10 w-10 items-center justify-center rounded-lg text-navy md:hidden"
             aria-label="Toggle menu"
           >
             {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
