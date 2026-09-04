@@ -7,7 +7,8 @@ import AdminHubsAdmins from "@/components/admin/AdminHubsAdmins";
 import AdminEvents from "@/components/admin/AdminEvents";
 import AdminImpact from "@/components/admin/AdminImpact";
 import AdminVolunteerOpportunities from "@/components/admin/AdminVolunteerOpportunities";
-import { Building2, Calendar, BarChart3, HandHeart, Loader2 } from "lucide-react";
+import AdminAIDrafts from "@/components/admin/AdminAIDrafts";
+import { Building2, Calendar, BarChart3, HandHeart, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function AdminMaster() {
@@ -15,7 +16,7 @@ export default function AdminMaster() {
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab") || "hubs";
-  const tab = ["hubs", "events", "volunteer", "impact"].includes(requestedTab) ? requestedTab : "hubs";
+  const tab = ["hubs", "events", "volunteer", "ai", "impact"].includes(requestedTab) ? requestedTab : "hubs";
 
   useEffect(() => {
     appClient.auth.me().then(setMe).catch(() => {}).finally(() => setLoading(false));
@@ -28,6 +29,7 @@ export default function AdminMaster() {
     { id: "hubs", label: "Hubs & Admins", icon: Building2 },
     { id: "events", label: "Events", icon: Calendar },
     { id: "volunteer", label: "Volunteer", icon: HandHeart },
+    { id: "ai", label: "AI Drafts", icon: Sparkles },
     { id: "impact", label: "Impact", icon: BarChart3 },
   ];
 
@@ -48,6 +50,7 @@ export default function AdminMaster() {
         {tab === "hubs" && <AdminHubsAdmins />}
         {tab === "events" && <AdminEvents />}
         {tab === "volunteer" && <AdminVolunteerOpportunities />}
+        {tab === "ai" && <AdminAIDrafts me={me} />}
         {tab === "impact" && <AdminImpact />}
       </div>
     </div>

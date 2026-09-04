@@ -22,6 +22,7 @@ const tableNames = {
   EventSignup: 'event_signups',
   Hub: 'hubs',
   HubContact: 'hub_contacts',
+  AiDraft: 'ai_drafts',
   ImpactStat: 'impact_stats',
   JapaLog: 'japa_logs',
   User: 'profiles',
@@ -212,6 +213,31 @@ export const appClient = {
       }
 
       return response.json().catch(() => ({}));
+    },
+  },
+
+  ai: {
+    async generateAdminDraft(values = {}) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
+        throw new Error('You must be logged in as an admin to generate drafts.');
+      }
+
+      const response = await fetch('/api/generate-admin-draft', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Draft generation failed.');
+      }
+
+      return payload;
     },
   },
 

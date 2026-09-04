@@ -35,6 +35,8 @@ Run [supabase/migrations/hub-contacts.sql](./supabase/migrations/hub-contacts.sq
 
 Run [supabase/migrations/standalone-hub-volunteer-opportunities.sql](./supabase/migrations/standalone-hub-volunteer-opportunities.sql) to let hub admins create volunteer opportunities that are tied to a hub without being linked to an event.
 
+Run [supabase/migrations/ai-drafts.sql](./supabase/migrations/ai-drafts.sql) to create the admin-only AI drafts table.
+
 Run [supabase/scripture_vectors.sql](./supabase/scripture_vectors.sql) to create the `scripture_chunks` pgvector table and search function for Ask the Pandit.
 
 Required Supabase project settings:
@@ -80,6 +82,8 @@ The service-role key is used only by the Vercel `/api/invite-user` server route 
 The Ask the Pandit chatbot runs through the Vercel `/api/ask-pandit` server route. That route searches scripture vectors in Supabase and calls the Hugging Face model from the server, so no separate Hugging Face Space or hosted chatbot site is required.
 
 To debug chatbot response time, open the site with `?panditDebug=1`, ask a question, and the chat response will include retrieval and model timing details.
+
+Admin AI drafts run through the Vercel `/api/generate-admin-draft` server route. Root admins can use all hub data; hub admins can only generate drafts for hubs assigned to them.
 
 Signup notification emails run through the Vercel `/api/notifySignup` server route and Resend. Signups still save if Resend is not configured, but no notification email will be sent.
 
