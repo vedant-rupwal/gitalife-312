@@ -20,6 +20,7 @@ import HubDetail from '@/pages/HubDetail';
 import Volunteering from '@/pages/Volunteering';
 import Impact from '@/pages/Impact';
 import Gallery from '@/pages/Gallery';
+import GalleryAlbum from '@/pages/GalleryAlbum';
 import AdminMaster from '@/pages/AdminMaster';
 import HubAdmin from '@/pages/HubAdmin';
 import Login from '@/pages/Login';
@@ -94,6 +95,7 @@ const AuthenticatedApp = () => {
         <Route path="/volunteer" element={<Volunteering />} />
         <Route path="/impact" element={<Impact />} />
         <Route path="/gallery" element={<Gallery />} />
+        <Route path="/gallery/:albumId" element={<GalleryAlbum />} />
       </Route>
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/admin" element={<AdminMaster />} />

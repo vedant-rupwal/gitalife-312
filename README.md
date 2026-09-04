@@ -41,6 +41,8 @@ Run [supabase/migrations/email-audience-lists.sql](./supabase/migrations/email-a
 
 Run [supabase/migrations/gallery-photos.sql](./supabase/migrations/gallery-photos.sql) to let admins upload/manage public gallery photos.
 
+Run [supabase/migrations/gallery-albums.sql](./supabase/migrations/gallery-albums.sql) if you already created gallery photos before album support was added.
+
 Run [supabase/scripture_vectors.sql](./supabase/scripture_vectors.sql) to create the `scripture_chunks` pgvector table and search function for Ask the Pandit.
 
 Required Supabase project settings:

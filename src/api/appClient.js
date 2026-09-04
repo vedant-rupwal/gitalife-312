@@ -137,6 +137,12 @@ const createEntity = (entityName) => {
       return normalizeRow(data);
     },
 
+    async createMany(values) {
+      const { data, error } = await supabase.from(tableName).insert(values).select('*');
+      throwIfError({ error });
+      return normalizeRows(data || []);
+    },
+
     async update(id, values) {
       const { data, error } = await supabase.from(tableName).update(values).eq('id', id).select('*').single();
       throwIfError({ error });

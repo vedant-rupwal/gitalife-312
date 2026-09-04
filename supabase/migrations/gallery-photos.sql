@@ -3,6 +3,8 @@ create table if not exists public.gallery_photos (
   title text not null,
   caption text,
   image_url text not null,
+  album_id uuid not null default gen_random_uuid(),
+  is_cover boolean not null default false,
   hub_id uuid references public.hubs(id) on delete set null,
   event_id uuid references public.community_events(id) on delete set null,
   is_featured boolean not null default false,
@@ -11,6 +13,10 @@ create table if not exists public.gallery_photos (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.gallery_photos add column if not exists album_id uuid not null default gen_random_uuid();
+alter table public.gallery_photos add column if not exists is_cover boolean not null default false;
+create index if not exists gallery_photos_album_id_idx on public.gallery_photos(album_id);
 
 drop trigger if exists touch_gallery_photos_updated_at on public.gallery_photos;
 create trigger touch_gallery_photos_updated_at
