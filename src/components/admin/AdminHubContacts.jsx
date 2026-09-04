@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, Mail, Phone, RefreshCw, UserRound, Users } from "lucide-react";
 import { appClient } from "@/api/appClient";
+import { sortHubsByName } from "@/lib/hubSorting";
 
 const formatDate = (value) => {
   if (!value) return "";
@@ -22,7 +23,7 @@ export default function AdminHubContacts() {
         appClient.entities.Hub.list("name"),
       ]);
       setContacts(contactRows);
-      setHubs(hubRows);
+      setHubs(sortHubsByName(hubRows));
     } catch {
       setContacts([]);
       setHubs([]);

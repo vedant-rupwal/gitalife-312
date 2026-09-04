@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Camera, Check, Images, Loader2, Trash2, Upload } from "lucide-react";
 import { appClient } from "@/api/appClient";
+import { sortHubsByName } from "@/lib/hubSorting";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none transition-all focus:border-saffron focus:ring-2 focus:ring-saffron/20";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
@@ -44,7 +45,7 @@ export default function AdminGallery({ me, hubId = null }) {
         appClient.entities.Hub.list("name"),
         appClient.entities.CommunityEvent.list("-event_date", 300),
       ]);
-      const visibleHubs = me?.role === "admin" ? hubRows : hubRows.filter((hub) => assignedHubIds.includes(hub.id));
+      const visibleHubs = sortHubsByName(me?.role === "admin" ? hubRows : hubRows.filter((hub) => assignedHubIds.includes(hub.id)));
       const visibleHubIds = new Set(visibleHubs.map((hub) => hub.id));
       const visibleEvents = eventRows.filter((event) => !event.hub_id || visibleHubIds.has(event.hub_id));
       setHubs(visibleHubs);

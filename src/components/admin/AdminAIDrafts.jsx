@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Bot, Check, Clipboard, Loader2, RefreshCw, Send, Sparkles } from "lucide-react";
 import { appClient } from "@/api/appClient";
+import { sortHubsByName } from "@/lib/hubSorting";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none transition-all focus:border-saffron focus:ring-2 focus:ring-saffron/20";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
@@ -68,9 +69,9 @@ export default function AdminAIDrafts({ me, hubId = null }) {
         appClient.entities.CommunityEvent.list("-event_date", 200).catch(() => []),
         appClient.entities.VolunteerOpportunity.list("-starts_at", 200).catch(() => []),
       ]);
-      const visibleHubs = me?.role === "admin"
+      const visibleHubs = sortHubsByName(me?.role === "admin"
         ? hubRows
-        : hubRows.filter((hub) => assignedHubIds.includes(hub.id));
+        : hubRows.filter((hub) => assignedHubIds.includes(hub.id)));
       const visibleHubIds = new Set(visibleHubs.map((hub) => hub.id));
       const visibleEvents = eventRows.filter((event) => !event.hub_id || visibleHubIds.has(event.hub_id));
       const visibleEventIds = new Set(visibleEvents.map((event) => event.id));

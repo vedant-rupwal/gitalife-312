@@ -7,6 +7,7 @@ import EventTagsInput from "@/components/admin/EventTagsInput";
 import EventSignupsPanel from "@/components/admin/EventSignupsPanel";
 import VolunteerOpportunityQuickForm from "@/components/admin/VolunteerOpportunityQuickForm";
 import { defaultEventTypes, formatEventType, normalizeEventType } from "@/lib/eventTypes";
+import { sortHubsByName } from "@/lib/hubSorting";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20 transition-all";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
@@ -77,7 +78,7 @@ export default function AdminEvents() {
       appClient.entities.Hub.list(),
     ]);
     setEvents(eventRows);
-    setHubs(hubRows);
+    setHubs(sortHubsByName(hubRows));
     setLoading(false);
   };
 

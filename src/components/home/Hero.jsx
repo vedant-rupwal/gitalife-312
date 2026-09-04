@@ -50,23 +50,6 @@ export default function Hero() {
               Start Daily Practice
             </Link>
           </div>
-
-          <div className="mt-14 flex items-center gap-8 float-up" style={{ animationDelay: "0.4s" }}>
-            <div>
-              <div className="font-heading text-3xl font-bold text-navy">1,200+</div>
-              <div className="font-body text-sm text-navy/50">Rounds chanted today</div>
-            </div>
-            <div className="h-12 w-px bg-navy/10" />
-            <div>
-              <div className="font-heading text-3xl font-bold text-river">12</div>
-              <div className="font-body text-sm text-navy/50">Active circles</div>
-            </div>
-            <div className="h-12 w-px bg-navy/10" />
-            <div>
-              <div className="font-heading text-3xl font-bold text-saffron">450</div>
-              <div className="font-body text-sm text-navy/50">Meals/week served</div>
-            </div>
-          </div>
         </div>
       </div>
 

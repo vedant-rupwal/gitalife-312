@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { appClient } from "@/api/appClient";
 import { MapPin, Clock, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sortHubsByName } from "@/lib/hubSorting";
 
 export default function HubsGrid() {
   const [hubs, setHubs] = useState([]);
@@ -15,7 +16,8 @@ export default function HubsGrid() {
   }, []);
 
   const campuses = ["All", ...new Set(hubs.map((h) => h.campus).filter(Boolean))];
-  const filtered = filter === "All" ? hubs : hubs.filter((h) => h.campus === filter);
+  const sortedHubs = sortHubsByName(hubs);
+  const filtered = filter === "All" ? sortedHubs : sortedHubs.filter((h) => h.campus === filter);
 
   if (loading) {
     return (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { appClient } from "@/api/appClient";
 import { Link } from "react-router-dom";
 import { Trash2, UserPlus, Loader2, Check, Pencil, Plus, Upload, ExternalLink } from "lucide-react";
+import { sortHubsByName } from "@/lib/hubSorting";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none focus:border-saffron focus:ring-2 focus:ring-saffron/20 transition-all";
 const labelCls = "block font-heading text-xs font-semibold text-navy/70 uppercase tracking-wide mb-1.5";
@@ -41,7 +42,7 @@ export default function AdminHubsAdmins() {
 
   const load = async () => {
     const [h, u] = await Promise.all([appClient.entities.Hub.list(), appClient.entities.User.list()]);
-    setHubs(h);
+    setHubs(sortHubsByName(h));
     setUsers(u);
     setLoading(false);
   };

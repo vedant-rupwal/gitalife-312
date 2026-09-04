@@ -5,6 +5,7 @@ import { MapPin, Clock, ArrowRight } from "lucide-react";
 import SectionHeading from "@/components/ui/SectionHeading";
 import ChicagoMap from "@/components/hubs/ChicagoMap";
 import { defaultHubs } from "@/data/defaultHubs";
+import { sortHubsByName } from "@/lib/hubSorting";
 
 export default function Hubs() {
   const [hubs, setHubs] = useState([]);
@@ -12,8 +13,8 @@ export default function Hubs() {
 
   useEffect(() => {
     appClient.entities.Hub.list()
-      .then((rows) => setHubs(rows.length ? rows : defaultHubs))
-      .catch(() => setHubs(defaultHubs))
+      .then((rows) => setHubs(sortHubsByName(rows.length ? rows : defaultHubs)))
+      .catch(() => setHubs(sortHubsByName(defaultHubs)))
       .finally(() => setLoading(false));
   }, []);
 

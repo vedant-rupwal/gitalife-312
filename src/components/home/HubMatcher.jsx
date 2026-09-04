@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { appClient } from "@/api/appClient";
 import { MapPin, ArrowRight, MessageCircle, Phone, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sortHubsByName } from "@/lib/hubSorting";
 
 export default function HubMatcher() {
   const [hubs, setHubs] = useState([]);
@@ -10,7 +11,7 @@ export default function HubMatcher() {
 
   useEffect(() => {
     appClient.entities.Hub.list()
-      .then(setHubs)
+      .then((rows) => setHubs(sortHubsByName(rows)))
       .finally(() => setLoading(false));
   }, []);
 
