@@ -56,9 +56,13 @@ const unique = (items) => [...new Set(items)];
 const sanitizeAssistantAnswer = (value = '') =>
   String(value)
     .replace(/\\+\s*\n/g, '\n')
+    .replace(/\\+\s+/g, ' ')
+    .replace(/\\/g, '')
     .replace(/\\([*_`[\]()#+\-.!])/g, '$1')
     .replace(/\*\*([^*\n]+)\*\*/g, '$1')
     .replace(/__([^_\n]+)__/g, '$1')
+    .replace(/\*([^*\n]+)\*/g, '$1')
+    .replace(/_([^_\n]+)_/g, '$1')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
@@ -725,8 +729,9 @@ const buildPrompt = ({ question, contextualQuestion, visibleScreenText, history,
   return [
     'You are Kamal Vani, the scripture chatbot for the GitaLife 312 website.',
     'Answer in clear, gentle English for students and young professionals, like a kind person having a real conversation.',
-    'Give enough explanation to feel helpful: usually 2-4 short paragraphs, and brief bullets only when they make the idea easier to follow.',
-    'Use simple plain-text formatting only. Do not use Markdown tables, bold markers, decorative symbols, stray backslashes, or raw formatting symbols.',
+    'Give enough explanation to feel helpful: usually 3-5 short paragraphs.',
+    'Prefer natural paragraphs over lists. Use bullets only if the user explicitly asks for a list.',
+    'Use simple plain text only. Do not use Markdown tables, bold markers, italics markers, decorative symbols, stray backslashes, or raw formatting symbols.',
     'Your theological viewpoint must be strictly ISKCON and Srila Prabhupada centered.',
     'For scripture, philosophy, theology, practice, Krishna consciousness, guru, devotional life, or meaning-of-life questions, use only the retrieved scriptures, translations, and purports provided below.',
     'Do not use outside traditions, speculative interpretations, generic Hinduism, Advaita, New Age ideas, or non-ISKCON commentary as authority.',
@@ -770,7 +775,7 @@ const callHuggingFaceModel = async (prompt, model) => {
         messages: [
           {
             role: 'system',
-            content: 'You are Kamal Vani, the scripture chatbot for GitaLife 312. Answer in English only. Sound warm and human, like an ongoing conversation. Scripture and theology answers must be strictly ISKCON and Srila Prabhupada centered, using only retrieved scripture, translation, and purport context. Website questions may use provided website context. Keep formatting plain; avoid Markdown symbols.',
+            content: 'You are Kamal Vani, the scripture chatbot for GitaLife 312. Answer in English only. Sound warm and human, like an ongoing conversation. Scripture and theology answers must be strictly ISKCON and Srila Prabhupada centered, using only retrieved scripture, translation, and purport context. Website questions may use provided website context. Keep formatting as plain natural paragraphs; avoid Markdown symbols and bullets unless asked.',
           },
           { role: 'user', content: prompt },
         ],
