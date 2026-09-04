@@ -21,6 +21,7 @@ const tableNames = {
   CommunityEvent: 'community_events',
   EventSignup: 'event_signups',
   EmailAudienceList: 'email_audience_lists',
+  GalleryPhoto: 'gallery_photos',
   Hub: 'hubs',
   HubContact: 'hub_contacts',
   AiDraft: 'ai_drafts',
@@ -53,6 +54,7 @@ const throwIfError = ({ error }) => {
 
 const HUB_IMAGES_BUCKET = 'hub-images';
 const EVENT_IMAGES_BUCKET = 'event-images';
+const GALLERY_IMAGES_BUCKET = 'gallery-images';
 const DEFAULT_GEOCODE_REGION = import.meta.env.VITE_GEOCODE_REGION || 'Chicago, IL, USA';
 
 const cleanFileName = (fileName = 'hub-image') => {
@@ -296,6 +298,10 @@ export const appClient = {
 
     async uploadEventImage(file) {
       return this.uploadImage(file, EVENT_IMAGES_BUCKET);
+    },
+
+    async uploadGalleryImage(file) {
+      return this.uploadImage(file, GALLERY_IMAGES_BUCKET);
     },
   },
 

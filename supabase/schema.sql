@@ -152,6 +152,20 @@ create table if not exists public.email_audience_lists (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.gallery_photos (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  caption text,
+  image_url text not null,
+  hub_id uuid references public.hubs(id) on delete set null,
+  event_id uuid references public.community_events(id) on delete set null,
+  is_featured boolean not null default false,
+  sort_order numeric not null default 0,
+  created_by uuid references auth.users(id) on delete set null default auth.uid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.impact_stats (
   id uuid primary key default gen_random_uuid(),
   label text not null,
@@ -326,7 +340,8 @@ begin
     'volunteer_opportunities',
     'volunteer_signups',
     'ai_drafts',
-    'email_audience_lists'
+    'email_audience_lists',
+    'gallery_photos'
   ]
   loop
     execute format('drop trigger if exists touch_%I_updated_at on public.%I', table_name, table_name);
@@ -346,13 +361,14 @@ alter table public.volunteer_opportunities enable row level security;
 alter table public.volunteer_signups enable row level security;
 alter table public.ai_drafts enable row level security;
 alter table public.email_audience_lists enable row level security;
+alter table public.gallery_photos enable row level security;
 
 grant usage on schema public to anon, authenticated;
-grant select on public.hubs, public.community_events, public.impact_stats, public.verses, public.volunteer_opportunities to anon, authenticated;
+grant select on public.hubs, public.community_events, public.impact_stats, public.verses, public.volunteer_opportunities, public.gallery_photos to anon, authenticated;
 grant insert on public.event_signups, public.hub_contacts, public.volunteer_signups to anon, authenticated;
 grant select, insert, update, delete on public.japa_logs to authenticated;
 grant select on public.profiles to authenticated;
-grant select, insert, update, delete on public.hubs, public.community_events, public.event_signups, public.hub_contacts, public.impact_stats, public.verses, public.volunteer_opportunities, public.volunteer_signups, public.ai_drafts, public.email_audience_lists to authenticated;
+grant select, insert, update, delete on public.hubs, public.community_events, public.event_signups, public.hub_contacts, public.impact_stats, public.verses, public.volunteer_opportunities, public.volunteer_signups, public.ai_drafts, public.email_audience_lists, public.gallery_photos to authenticated;
 grant update on public.profiles to authenticated;
 
 drop policy if exists "Profiles are visible to self and admins" on public.profiles;
@@ -522,6 +538,27 @@ create policy "Admins and hub managers delete email audience lists"
 on public.email_audience_lists for delete
 using (public.is_admin() or public.can_manage_hub(hub_id));
 
+drop policy if exists "Gallery photos are public" on public.gallery_photos;
+create policy "Gallery photos are public"
+on public.gallery_photos for select
+using (true);
+
+drop policy if exists "Admins and hub managers create gallery photos" on public.gallery_photos;
+create policy "Admins and hub managers create gallery photos"
+on public.gallery_photos for insert
+with check (public.is_admin() or public.can_manage_hub(hub_id));
+
+drop policy if exists "Admins and hub managers update gallery photos" on public.gallery_photos;
+create policy "Admins and hub managers update gallery photos"
+on public.gallery_photos for update
+using (public.is_admin() or public.can_manage_hub(hub_id))
+with check (public.is_admin() or public.can_manage_hub(hub_id));
+
+drop policy if exists "Admins and hub managers delete gallery photos" on public.gallery_photos;
+create policy "Admins and hub managers delete gallery photos"
+on public.gallery_photos for delete
+using (public.is_admin() or public.can_manage_hub(hub_id));
+
 drop policy if exists "Impact stats are public" on public.impact_stats;
 create policy "Impact stats are public"
 on public.impact_stats for select
@@ -556,6 +593,10 @@ on conflict (id) do update set public = excluded.public;
 
 insert into storage.buckets (id, name, public)
 values ('event-images', 'event-images', true)
+on conflict (id) do update set public = excluded.public;
+
+insert into storage.buckets (id, name, public)
+values ('gallery-images', 'gallery-images', true)
 on conflict (id) do update set public = excluded.public;
 
 drop policy if exists "Hub images are public" on storage.objects;
@@ -593,6 +634,62 @@ on storage.objects for insert
 to authenticated
 with check (
   bucket_id = 'event-images'
+  and exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and (role = 'admin' or assigned_hub_id is not null or cardinality(assigned_hub_ids) > 0)
+  )
+);
+
+drop policy if exists "Gallery images are public" on storage.objects;
+create policy "Gallery images are public"
+on storage.objects for select
+using (bucket_id = 'gallery-images');
+
+drop policy if exists "Admins and hub managers upload gallery images" on storage.objects;
+create policy "Admins and hub managers upload gallery images"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'gallery-images'
+  and exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and (role = 'admin' or assigned_hub_id is not null or cardinality(assigned_hub_ids) > 0)
+  )
+);
+
+drop policy if exists "Admins and hub managers update gallery images" on storage.objects;
+create policy "Admins and hub managers update gallery images"
+on storage.objects for update
+to authenticated
+using (
+  bucket_id = 'gallery-images'
+  and exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and (role = 'admin' or assigned_hub_id is not null or cardinality(assigned_hub_ids) > 0)
+  )
+)
+with check (
+  bucket_id = 'gallery-images'
+  and exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and (role = 'admin' or assigned_hub_id is not null or cardinality(assigned_hub_ids) > 0)
+  )
+);
+
+drop policy if exists "Admins and hub managers delete gallery images" on storage.objects;
+create policy "Admins and hub managers delete gallery images"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'gallery-images'
   and exists (
     select 1
     from public.profiles

@@ -9,7 +9,8 @@ import HubContactsManager from "@/components/admin/HubContactsManager";
 import AdminVolunteerOpportunities from "@/components/admin/AdminVolunteerOpportunities";
 import AdminAIDrafts from "@/components/admin/AdminAIDrafts";
 import AdminEmailSender from "@/components/admin/AdminEmailSender";
-import { ArrowLeft, Calendar, ExternalLink, HandHeart, Info, Loader2, Mail, Sparkles, Users } from "lucide-react";
+import AdminGallery from "@/components/admin/AdminGallery";
+import { ArrowLeft, Calendar, Camera, ExternalLink, HandHeart, Info, Loader2, Mail, Sparkles, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function HubAdmin() {
@@ -18,7 +19,7 @@ export default function HubAdmin() {
   const [me, setMe] = useState(null);
   const [loading, setLoading] = useState(true);
   const requestedTab = searchParams.get("tab") || "info";
-  const tab = ["info", "events", "volunteer", "contacts", "email", "ai"].includes(requestedTab) ? requestedTab : "info";
+  const tab = ["info", "events", "volunteer", "gallery", "contacts", "email", "ai"].includes(requestedTab) ? requestedTab : "info";
 
   useEffect(() => {
     appClient.auth.me().then(setMe).catch(() => {}).finally(() => setLoading(false));
@@ -33,6 +34,7 @@ export default function HubAdmin() {
     { id: "info", label: "Hub Info", icon: Info },
     { id: "events", label: "Events", icon: Calendar },
     { id: "volunteer", label: "Volunteer", icon: HandHeart },
+    { id: "gallery", label: "Gallery", icon: Camera },
     { id: "contacts", label: "Contacts", icon: Users },
     { id: "email", label: "Email", icon: Mail },
     { id: "ai", label: "AI Drafts", icon: Sparkles },
@@ -72,6 +74,7 @@ export default function HubAdmin() {
         {tab === "info" && <HubInfoForm hubId={hubId} />}
         {tab === "events" && <HubEventsManager hubId={hubId} />}
         {tab === "volunteer" && <AdminVolunteerOpportunities hubId={hubId} />}
+        {tab === "gallery" && <AdminGallery me={me} hubId={hubId} />}
         {tab === "contacts" && <HubContactsManager hubId={hubId} />}
         {tab === "email" && <AdminEmailSender me={me} hubId={hubId} />}
         {tab === "ai" && <AdminAIDrafts me={me} hubId={hubId} />}

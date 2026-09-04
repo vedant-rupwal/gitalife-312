@@ -1,6 +1,7 @@
 import React from "react";
-import SocialGrid from "@/components/home/SocialGrid";
 import SectionHeading from "@/components/ui/SectionHeading";
+import GalleryPhotoGrid from "@/components/gallery/GalleryPhotoGrid";
+import ElfsightInstagramFeed from "@/components/gallery/ElfsightInstagramFeed";
 
 export default function Gallery() {
   return (
@@ -16,7 +17,10 @@ export default function Gallery() {
       </section>
       <section className="py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SocialGrid />
+          <GalleryPhotoGrid />
+          <div className="mt-12">
+            <ElfsightInstagramFeed />
+          </div>
         </div>
       </section>
     </div>

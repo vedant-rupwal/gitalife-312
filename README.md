@@ -39,6 +39,8 @@ Run [supabase/migrations/ai-drafts.sql](./supabase/migrations/ai-drafts.sql) to 
 
 Run [supabase/migrations/email-audience-lists.sql](./supabase/migrations/email-audience-lists.sql) to let admins save reusable manual email lists.
 
+Run [supabase/migrations/gallery-photos.sql](./supabase/migrations/gallery-photos.sql) to let admins upload/manage public gallery photos.
+
 Run [supabase/scripture_vectors.sql](./supabase/scripture_vectors.sql) to create the `scripture_chunks` pgvector table and search function for Ask the Pandit.
 
 Required Supabase project settings:
@@ -78,6 +80,7 @@ Use the normal Vercel Vite defaults:
   - `RESEND_API_KEY` for email notifications when someone signs up for an event or volunteer opportunity
   - `SIGNUP_NOTIFICATION_EMAILS` optional comma-separated recipient list; if omitted, root admin emails from `profiles` are used
   - `SIGNUP_NOTIFICATION_FROM` optional verified sender, for example `GitaLife 312 <hello@yourdomain.com>`
+  - `VITE_ELFSIGHT_INSTAGRAM_WIDGET_ID` optional Elfsight Instagram Feed widget ID for showing the live Instagram feed on `/gallery`
 
 The service-role key is used only by the Vercel `/api/invite-user` server route for admin invites. Never prefix it with `VITE_`.
 
