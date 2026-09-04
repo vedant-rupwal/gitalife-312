@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Bot, Check, Clipboard, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Bot, Check, Clipboard, Loader2, RefreshCw, Send, Sparkles } from "lucide-react";
 import { appClient } from "@/api/appClient";
 
 const inputCls = "w-full rounded-xl border border-navy/15 px-4 py-3 font-body text-sm text-navy outline-none transition-all focus:border-saffron focus:ring-2 focus:ring-saffron/20";
@@ -23,6 +23,8 @@ const formatDate = (value) => {
 
 export default function AdminAIDrafts({ me, hubId = null }) {
   const [hubs, setHubs] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [opportunities, setOpportunities] = useState([]);
   const [drafts, setDrafts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -34,6 +36,7 @@ export default function AdminAIDrafts({ me, hubId = null }) {
     hub_id: hubId || "",
     instructions: "",
   });
+  const [applyTargets, setApplyTargets] = useState({});
 
   const assignedHubIds = useMemo(() => [
     me?.assigned_hub_id,
@@ -50,10 +53,22 @@ export default function AdminAIDrafts({ me, hubId = null }) {
           ? appClient.entities.AiDraft.filter({ hub_id: hubId }, "-created_date", 100).catch(() => [])
           : appClient.entities.AiDraft.list("-created_date", 100).catch(() => []),
       ]);
+      const [eventRows, opportunityRows] = await Promise.all([
+        appClient.entities.CommunityEvent.list("-event_date", 200).catch(() => []),
+        appClient.entities.VolunteerOpportunity.list("-starts_at", 200).catch(() => []),
+      ]);
       const visibleHubs = me?.role === "admin"
         ? hubRows
         : hubRows.filter((hub) => assignedHubIds.includes(hub.id));
+      const visibleHubIds = new Set(visibleHubs.map((hub) => hub.id));
+      const visibleEvents = eventRows.filter((event) => !event.hub_id || visibleHubIds.has(event.hub_id));
+      const visibleEventIds = new Set(visibleEvents.map((event) => event.id));
       setHubs(visibleHubs);
+      setEvents(hubId ? visibleEvents.filter((event) => event.hub_id === hubId) : visibleEvents);
+      setOpportunities(opportunityRows.filter((opportunity) => (
+        (!opportunity.hub_id || visibleHubIds.has(opportunity.hub_id) || visibleEventIds.has(opportunity.event_id))
+        && (!hubId || opportunity.hub_id === hubId || visibleEventIds.has(opportunity.event_id))
+      )));
       setDrafts(draftRows);
       if (hubId) setForm((current) => ({ ...current, hub_id: hubId }));
     } finally {
@@ -94,6 +109,63 @@ export default function AdminAIDrafts({ me, hubId = null }) {
     await navigator.clipboard.writeText(draft.body || "");
     setCopiedId(draft.id);
     setTimeout(() => setCopiedId(""), 1800);
+  };
+
+  const setApplyTarget = (draftId, field, value) => {
+    setApplyTargets((current) => ({
+      ...current,
+      [draftId]: {
+        ...(current[draftId] || {}),
+        [field]: value,
+      },
+    }));
+  };
+
+  const applyDraft = async (draft) => {
+    const target = applyTargets[draft.id] || {};
+    try {
+      if (draft.draft_type === "event") {
+        if (!target.event_id) throw new Error("Choose an event first.");
+        await appClient.entities.CommunityEvent.update(target.event_id, { description: draft.body });
+      } else if (draft.draft_type === "volunteer") {
+        if (!target.opportunity_id) throw new Error("Choose a volunteer opportunity first.");
+        await appClient.entities.VolunteerOpportunity.update(target.opportunity_id, { description: draft.body });
+      } else {
+        if (!target.hub_id && !hubId) throw new Error("Choose a hub first.");
+        await appClient.entities.Hub.update(target.hub_id || hubId, { description: draft.body });
+      }
+      await updateStatus(draft, "used");
+      setMsg("Draft applied to the website.");
+    } catch (error) {
+      setMsg(error.message || "Could not apply draft.");
+    } finally {
+      setTimeout(() => setMsg(""), 5000);
+    }
+  };
+
+  const applyOptionsFor = (draft) => {
+    if (draft.draft_type === "event") {
+      return {
+        label: "Apply To Event",
+        field: "event_id",
+        options: events.map((event) => [event.id, event.title]),
+      };
+    }
+    if (draft.draft_type === "volunteer") {
+      return {
+        label: "Apply To Volunteer Opportunity",
+        field: "opportunity_id",
+        options: opportunities.map((opportunity) => [opportunity.id, opportunity.title]),
+      };
+    }
+    if (["instagram", "whatsapp", "email", "summary"].includes(draft.draft_type)) {
+      return null;
+    }
+    return {
+      label: "Apply To Hub Description",
+      field: "hub_id",
+      options: hubs.map((hub) => [hub.id, hub.name]),
+    };
   };
 
   return (
@@ -162,6 +234,26 @@ export default function AdminAIDrafts({ me, hubId = null }) {
                   </div>
                 </div>
                 <div className="whitespace-pre-wrap rounded-xl bg-cream p-4 font-body text-sm leading-relaxed text-navy/75">{draft.body}</div>
+                {draft.status === "approved" && applyOptionsFor(draft) && (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
+                    <select
+                      value={applyTargets[draft.id]?.[applyOptionsFor(draft).field] || ""}
+                      onChange={(event) => setApplyTarget(draft.id, applyOptionsFor(draft).field, event.target.value)}
+                      className={inputCls}
+                    >
+                      <option value="">{applyOptionsFor(draft).label}</option>
+                      {applyOptionsFor(draft).options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                    <button onClick={() => applyDraft(draft)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-navy px-4 py-3 font-heading text-xs font-semibold text-white hover:bg-navy/90">
+                      <Send className="h-3.5 w-3.5" />Apply Draft
+                    </button>
+                  </div>
+                )}
+                {draft.status === "approved" && ["instagram", "whatsapp", "email", "summary"].includes(draft.draft_type) && (
+                  <p className="mt-3 rounded-xl bg-saffron/10 px-4 py-3 font-body text-xs text-saffron">
+                    This draft is approved. Copy it for now; direct sending/posting needs that channel integration enabled.
+                  </p>
+                )}
               </div>
             ))}
           </div>
