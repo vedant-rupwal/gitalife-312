@@ -64,10 +64,10 @@ export default function Footer() {
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="font-body text-xs text-white/40">© 2026 GitaLife 312. Built with devotion in the Windy City.</p>
           <div className="flex flex-wrap items-center justify-center gap-4 font-body text-xs text-white/40">
-            <a href="#" className="hover:text-white/70 transition-colors">Privacy</a>
             <Link to="/login" className="rounded-xl border border-white/15 bg-white/10 px-5 py-2.5 font-heading text-sm font-semibold text-white transition-colors hover:bg-white/15">
               Login
             </Link>
+            <a href="#" className="hover:text-white/70 transition-colors">Privacy</a>
             <a href="#" className="hover:text-white/70 transition-colors">Terms</a>
           </div>
         </div>
