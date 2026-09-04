@@ -20,6 +20,7 @@ export const supabase = createClient(resolvedSupabaseUrl, resolvedSupabaseAnonKe
 const tableNames = {
   CommunityEvent: 'community_events',
   EventSignup: 'event_signups',
+  EmailAudienceList: 'email_audience_lists',
   Hub: 'hubs',
   HubContact: 'hub_contacts',
   AiDraft: 'ai_drafts',

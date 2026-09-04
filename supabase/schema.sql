@@ -142,6 +142,16 @@ create table if not exists public.ai_drafts (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.email_audience_lists (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  emails text[] not null default '{}',
+  hub_id uuid references public.hubs(id) on delete set null,
+  created_by uuid references auth.users(id) on delete set null default auth.uid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.impact_stats (
   id uuid primary key default gen_random_uuid(),
   label text not null,
@@ -315,7 +325,8 @@ begin
     'verses',
     'volunteer_opportunities',
     'volunteer_signups',
-    'ai_drafts'
+    'ai_drafts',
+    'email_audience_lists'
   ]
   loop
     execute format('drop trigger if exists touch_%I_updated_at on public.%I', table_name, table_name);
@@ -334,13 +345,14 @@ alter table public.verses enable row level security;
 alter table public.volunteer_opportunities enable row level security;
 alter table public.volunteer_signups enable row level security;
 alter table public.ai_drafts enable row level security;
+alter table public.email_audience_lists enable row level security;
 
 grant usage on schema public to anon, authenticated;
 grant select on public.hubs, public.community_events, public.impact_stats, public.verses, public.volunteer_opportunities to anon, authenticated;
 grant insert on public.event_signups, public.hub_contacts, public.volunteer_signups to anon, authenticated;
 grant select, insert, update, delete on public.japa_logs to authenticated;
 grant select on public.profiles to authenticated;
-grant select, insert, update, delete on public.hubs, public.community_events, public.event_signups, public.hub_contacts, public.impact_stats, public.verses, public.volunteer_opportunities, public.volunteer_signups, public.ai_drafts to authenticated;
+grant select, insert, update, delete on public.hubs, public.community_events, public.event_signups, public.hub_contacts, public.impact_stats, public.verses, public.volunteer_opportunities, public.volunteer_signups, public.ai_drafts, public.email_audience_lists to authenticated;
 grant update on public.profiles to authenticated;
 
 drop policy if exists "Profiles are visible to self and admins" on public.profiles;
@@ -488,6 +500,27 @@ create policy "Admins and hub managers update AI drafts"
 on public.ai_drafts for update
 using (public.is_admin() or public.can_manage_hub(hub_id))
 with check (public.is_admin() or public.can_manage_hub(hub_id));
+
+drop policy if exists "Admins and hub managers read email audience lists" on public.email_audience_lists;
+create policy "Admins and hub managers read email audience lists"
+on public.email_audience_lists for select
+using (public.is_admin() or public.can_manage_hub(hub_id));
+
+drop policy if exists "Admins and hub managers create email audience lists" on public.email_audience_lists;
+create policy "Admins and hub managers create email audience lists"
+on public.email_audience_lists for insert
+with check (public.is_admin() or public.can_manage_hub(hub_id));
+
+drop policy if exists "Admins and hub managers update email audience lists" on public.email_audience_lists;
+create policy "Admins and hub managers update email audience lists"
+on public.email_audience_lists for update
+using (public.is_admin() or public.can_manage_hub(hub_id))
+with check (public.is_admin() or public.can_manage_hub(hub_id));
+
+drop policy if exists "Admins and hub managers delete email audience lists" on public.email_audience_lists;
+create policy "Admins and hub managers delete email audience lists"
+on public.email_audience_lists for delete
+using (public.is_admin() or public.can_manage_hub(hub_id));
 
 drop policy if exists "Impact stats are public" on public.impact_stats;
 create policy "Impact stats are public"

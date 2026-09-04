@@ -37,6 +37,8 @@ Run [supabase/migrations/standalone-hub-volunteer-opportunities.sql](./supabase/
 
 Run [supabase/migrations/ai-drafts.sql](./supabase/migrations/ai-drafts.sql) to create the admin-only AI drafts table.
 
+Run [supabase/migrations/email-audience-lists.sql](./supabase/migrations/email-audience-lists.sql) to let admins save reusable manual email lists.
+
 Run [supabase/scripture_vectors.sql](./supabase/scripture_vectors.sql) to create the `scripture_chunks` pgvector table and search function for Ask the Pandit.
 
 Required Supabase project settings:

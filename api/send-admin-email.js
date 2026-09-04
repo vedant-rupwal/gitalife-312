@@ -96,16 +96,37 @@ const getOpportunityHubId = async (supabase, opportunity) => {
   return event.hub_id;
 };
 
-const getRecipients = async ({ supabase, profile, body }) => {
-  const audience = body.audience_type;
-  const hubId = body.hub_id || null;
+const parseAudienceTypes = (body = {}) => {
+  const audiences = Array.isArray(body.audience_types) ? body.audience_types : [body.audience_type];
+  return [...new Set(audiences.map((audience) => String(audience || '').trim()).filter(Boolean))];
+};
 
+const getRecipientsForAudience = async ({ supabase, profile, body, audience }) => {
+  const hubId = body.hub_id || null;
   if (audience === 'manual') {
     if (hubId) requireHubAccess(profile, hubId);
     const manualRows = String(body.manual_emails || '')
       .split(/[\n,;]/)
       .map((email) => ({ email, name: email }));
     return uniqueRecipients(manualRows);
+  }
+
+  if (audience === 'saved_list') {
+    const listIds = Array.isArray(body.saved_list_ids) ? body.saved_list_ids.filter(Boolean) : [];
+    if (!listIds.length) throw new Error('Choose at least one saved list.');
+
+    const { data, error } = await supabase
+      .from('email_audience_lists')
+      .select('id,name,emails,hub_id')
+      .in('id', listIds)
+      .limit(50);
+    if (error) throw error;
+
+    const rows = (data || []).flatMap((list) => {
+      requireHubAccess(profile, list.hub_id);
+      return (Array.isArray(list.emails) ? list.emails : []).map((email) => ({ email, name: email }));
+    });
+    return uniqueRecipients(rows);
   }
 
   if (audience === 'hub_contacts') {
@@ -180,6 +201,17 @@ const getRecipients = async ({ supabase, profile, body }) => {
   }
 
   throw new Error('Choose who should receive this email.');
+};
+
+const getRecipients = async ({ supabase, profile, body }) => {
+  const audiences = parseAudienceTypes(body);
+  if (!audiences.length) throw new Error('Choose who should receive this email.');
+
+  const recipientGroups = await Promise.all(
+    audiences.map((audience) => getRecipientsForAudience({ supabase, profile, body, audience })),
+  );
+
+  return uniqueRecipients(recipientGroups.flat());
 };
 
 const sendOne = async ({ apiKey, from, replyTo, recipient, subject, body }) => {
