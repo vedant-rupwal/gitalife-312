@@ -94,7 +94,7 @@ export default function AskPanditWidget() {
 
       const text = await response.text();
       if (!response.ok) {
-        let message = text || "The Pandit could not answer right now.";
+        let message = text || "Kamal Vani could not answer right now.";
         try {
           message = JSON.parse(text).error || message;
         } catch {
@@ -126,7 +126,7 @@ export default function AskPanditWidget() {
         ...current,
         {
           role: "assistant",
-          text: error instanceof Error ? error.message : "The Pandit server is unavailable right now.",
+          text: error instanceof Error ? error.message : "Kamal Vani is unavailable right now.",
         },
       ]);
     } finally {
@@ -144,7 +144,7 @@ export default function AskPanditWidget() {
                 <BookOpen className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <p className="font-heading text-sm font-bold leading-tight">Ask the Pandit</p>
+                <p className="font-heading text-sm font-bold leading-tight">Kamal Vani</p>
                 <p className="font-body text-xs text-white/85">Scripture-guided answers</p>
               </div>
             </div>
@@ -247,7 +247,7 @@ export default function AskPanditWidget() {
         <button
           onClick={() => setOpen(true)}
           className="ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-navy text-white shadow-xl shadow-navy/20 transition-all hover:scale-105"
-          aria-label="Open Ask the Pandit chat"
+          aria-label="Open Kamal Vani chat"
         >
           <MessageCircle className="h-6 w-6" />
         </button>

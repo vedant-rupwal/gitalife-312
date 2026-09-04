@@ -43,7 +43,7 @@ Run [supabase/migrations/gallery-photos.sql](./supabase/migrations/gallery-photo
 
 Run [supabase/migrations/gallery-albums.sql](./supabase/migrations/gallery-albums.sql) if you already created gallery photos before album support was added.
 
-Run [supabase/scripture_vectors.sql](./supabase/scripture_vectors.sql) to create the `scripture_chunks` pgvector table and search function for Ask the Pandit.
+Run [supabase/scripture_vectors.sql](./supabase/scripture_vectors.sql) to create the `scripture_chunks` pgvector table and search function for Kamal Vani.
 
 Required Supabase project settings:
 
@@ -76,7 +76,7 @@ Use the normal Vercel Vite defaults:
   - `VITE_SUPABASE_ANON_KEY`
   - `SUPABASE_SERVICE_ROLE_KEY`
   - `VITE_GEOCODE_REGION` optional, defaults to `Chicago, IL, USA` for estimating hub map coordinates from campus/neighborhood text
-  - `HF_TOKEN` for the floating Ask the Pandit scripture chatbot
+  - `HF_TOKEN` for the floating Kamal Vani scripture chatbot
   - `HF_MODEL` optional, defaults to `openai/gpt-oss-20b:fastest`; do not use the Together `-Turbo` model name unless you have created a dedicated endpoint for it
   - `HF_EMBEDDING_MODEL` optional, defaults to `sentence-transformers/all-MiniLM-L6-v2`
   - `RESEND_API_KEY` for email notifications when someone signs up for an event or volunteer opportunity
@@ -86,7 +86,7 @@ Use the normal Vercel Vite defaults:
 
 The service-role key is used only by the Vercel `/api/invite-user` server route for admin invites. Never prefix it with `VITE_`.
 
-The Ask the Pandit chatbot runs through the Vercel `/api/ask-pandit` server route. That route searches scripture vectors in Supabase and calls the Hugging Face model from the server, so no separate Hugging Face Space or hosted chatbot site is required.
+The Kamal Vani chatbot runs through the Vercel `/api/ask-pandit` server route. That route searches scripture vectors in Supabase and calls the Hugging Face model from the server, so no separate Hugging Face Space or hosted chatbot site is required.
 
 To debug chatbot response time, open the site with `?panditDebug=1`, ask a question, and the chat response will include retrieval and model timing details.
 

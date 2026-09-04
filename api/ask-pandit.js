@@ -723,7 +723,7 @@ const buildPrompt = ({ question, contextualQuestion, visibleScreenText, history,
     .join('\n');
 
   return [
-    'You are Ask the Pandit for the GitaLife 312 website.',
+    'You are Kamal Vani, the scripture chatbot for the GitaLife 312 website.',
     'Answer in clear, gentle English for students and young professionals, like a kind person having a real conversation.',
     'Give enough explanation to feel helpful: usually 2-4 short paragraphs, and brief bullets only when they make the idea easier to follow.',
     'Use simple plain-text formatting only. Do not use Markdown tables, bold markers, decorative symbols, stray backslashes, or raw formatting symbols.',
@@ -770,7 +770,7 @@ const callHuggingFaceModel = async (prompt, model) => {
         messages: [
           {
             role: 'system',
-            content: 'You are Ask the Pandit for GitaLife 312. Answer in English only. Sound warm and human, like an ongoing conversation. Scripture and theology answers must be strictly ISKCON and Srila Prabhupada centered, using only retrieved scripture, translation, and purport context. Website questions may use provided website context. Keep formatting plain; avoid Markdown symbols.',
+            content: 'You are Kamal Vani, the scripture chatbot for GitaLife 312. Answer in English only. Sound warm and human, like an ongoing conversation. Scripture and theology answers must be strictly ISKCON and Srila Prabhupada centered, using only retrieved scripture, translation, and purport context. Website questions may use provided website context. Keep formatting plain; avoid Markdown symbols.',
           },
           { role: 'user', content: prompt },
         ],
@@ -869,7 +869,7 @@ export default async function handler(req, res) {
     return res.status(200).send(`${cleanAnswer || 'I do not have enough retrieved scripture to answer that.'}${citationText}`);
   } catch (error) {
     return res.status(500).json({
-      error: error instanceof Error ? error.message : 'Ask the Pandit failed.',
+      error: error instanceof Error ? error.message : 'Kamal Vani failed.',
     });
   }
 }
