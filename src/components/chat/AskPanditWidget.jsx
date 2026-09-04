@@ -43,6 +43,12 @@ export default function AskPanditWidget() {
   }, [messages]);
 
   const reset = () => setMessages(initialMessages);
+  const closeAndClear = () => {
+    setMessages(initialMessages);
+    setQuestion("");
+    localStorage.removeItem(historyKey);
+    setOpen(false);
+  };
 
   const typeAssistantMessage = async (text) => {
     const words = text.split(/(\s+)/).filter(Boolean);
@@ -149,7 +155,7 @@ export default function AskPanditWidget() {
               <button onClick={() => setOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 hover:bg-white/25" aria-label="Minimize chat">
                 <Minus className="h-4 w-4" />
               </button>
-              <button onClick={() => setOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 hover:bg-white/25" aria-label="Close chat">
+              <button onClick={closeAndClear} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 hover:bg-white/25" aria-label="Close and clear chat">
                 <X className="h-4 w-4" />
               </button>
             </div>
