@@ -41,6 +41,21 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
 
 const safeText = (value = '', max = 800) => String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
 
+const getDraftInstructions = (draftType) => {
+  if (draftType === 'visual_prompt') {
+    return [
+      'Create a copy-paste-ready prompt for ChatGPT, Gemini, or another image-generation tool to make an Instagram-ready flyer or visual aid.',
+      'The prompt should describe the visual layout, mood, colors, typography direction, image style, and any exact words that should appear on the design.',
+      'Use GitaLife 312 brand direction: warm saffron/orange accents, deep navy text, clean modern devotional community feel, lotus-inspired warmth, Chicago student/community energy.',
+      'Avoid asking the image model to create distorted sacred figures, inaccurate deity imagery, or tiny unreadable text.',
+      'Ask for a clean poster with generous spacing and readable text. If there are too many event details, place only the title, date/time, location, and one short call to action on the image.',
+      'Include a short "Caption idea" after the image prompt if useful.',
+    ].join(' ');
+  }
+
+  return 'Return only the draft content. Make it ready for an admin to review, edit, copy, or paste.';
+};
+
 const getAllowedHubIds = (profile) => {
   if (profile?.role === 'admin') return null;
   return [
@@ -216,7 +231,7 @@ export default async function handler(req, res) {
     'Relevant GitaLife 312 backend context:',
     context,
     '',
-    'Return only the draft content. Make it ready for an admin to review, edit, copy, or paste.',
+    getDraftInstructions(draftType),
   ].join('\n');
 
   try {

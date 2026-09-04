@@ -9,10 +9,21 @@ const draftTypes = [
   ["event", "Event Description"],
   ["volunteer", "Volunteer Opportunity"],
   ["instagram", "Instagram Caption"],
+  ["visual_prompt", "Visual AI Prompt for Flyers/Posts"],
   ["whatsapp", "WhatsApp Message"],
   ["email", "Follow-up Email"],
   ["summary", "Signup Summary"],
 ];
+
+const instructionPlaceholders = {
+  event: "Draft a warm website description for this week's UIC gathering. Mention prasadam, kirtan, and invite friends.",
+  volunteer: "Create a clear volunteer opportunity description for setup help before Saturday kirtan. Include arrival time and what they will help with.",
+  instagram: "Write an Instagram caption for the upcoming kirtan. Keep it warm, inviting, and easy to read.",
+  visual_prompt: "Create a visual prompt for an Instagram flyer for Saturday kirtan. Include date, time, location, mood, brand colors, and any text that should appear on the image.",
+  whatsapp: "Draft a warm WhatsApp message for this week's UIC gathering. Mention prasadam and invite friends.",
+  email: "Draft a follow-up email to people who signed up for the event. Thank them and remind them of the next step.",
+  summary: "Summarize recent signups and contacts for the admin team, with practical next steps.",
+};
 
 const formatDate = (value) => {
   if (!value) return "";
@@ -158,7 +169,7 @@ export default function AdminAIDrafts({ me, hubId = null }) {
         options: opportunities.map((opportunity) => [opportunity.id, opportunity.title]),
       };
     }
-    if (["instagram", "whatsapp", "email", "summary"].includes(draft.draft_type)) {
+    if (["instagram", "visual_prompt", "whatsapp", "email", "summary"].includes(draft.draft_type)) {
       return null;
     }
     return {
@@ -194,7 +205,12 @@ export default function AdminAIDrafts({ me, hubId = null }) {
           </div>
           <div className="sm:col-span-2">
             <label className={labelCls}>Instructions (Required)</label>
-            <textarea value={form.instructions} onChange={(event) => setForm({ ...form, instructions: event.target.value })} className={inputCls} rows={4} placeholder="Draft a warm WhatsApp message for this week's UIC gathering. Mention prasadam and invite friends." required />
+            <textarea value={form.instructions} onChange={(event) => setForm({ ...form, instructions: event.target.value })} className={inputCls} rows={5} placeholder={instructionPlaceholders[form.draft_type] || "Tell the assistant what to create."} required />
+            {form.draft_type === "visual_prompt" && (
+              <p className="mt-2 font-body text-xs leading-relaxed text-navy/50">
+                This creates a prompt you can paste into ChatGPT, Gemini, or another image tool to generate a flyer/post image.
+              </p>
+            )}
           </div>
         </div>
         <button type="submit" disabled={generating} className="mt-4 flex items-center gap-2 rounded-xl bg-navy px-6 py-3 font-heading text-sm font-semibold text-white disabled:opacity-60">
@@ -249,9 +265,9 @@ export default function AdminAIDrafts({ me, hubId = null }) {
                     </button>
                   </div>
                 )}
-                {draft.status === "approved" && ["instagram", "whatsapp", "email", "summary"].includes(draft.draft_type) && (
+                {draft.status === "approved" && ["instagram", "visual_prompt", "whatsapp", "email", "summary"].includes(draft.draft_type) && (
                   <p className="mt-3 rounded-xl bg-saffron/10 px-4 py-3 font-body text-xs text-saffron">
-                    This draft is approved. Copy it for now; direct sending/posting needs that channel integration enabled.
+                    This draft is approved. Copy it for now; direct sending, posting, or image generation needs that channel integration enabled.
                   </p>
                 )}
               </div>
