@@ -16,6 +16,15 @@ const MAX_VERSES = 750;
 const MAX_CONTEXT_VERSES = 6;
 const MAX_CONTEXT_CHUNKS = 6;
 const MAX_WEBSITE_ITEMS = 100;
+const FOLLOW_UP_PATTERNS = [
+  /^(tell me )?more\.?$/i,
+  /^tell me more( about (it|that|this))?\.?$/i,
+  /^(go|continue) (on|deeper)\.?$/i,
+  /^explain (more|that|this)\.?$/i,
+  /^what (does that mean|about that|about this)\??$/i,
+  /^why\??$/i,
+  /^how so\??$/i,
+];
 
 const getEnv = (...names) => {
   for (const name of names) {
@@ -43,6 +52,15 @@ const tokenize = (value = '') =>
     .filter((token) => token.length > 2);
 
 const unique = (items) => [...new Set(items)];
+
+const sanitizeAssistantAnswer = (value = '') =>
+  String(value)
+    .replace(/\\+\s*\n/g, '\n')
+    .replace(/\\([*_`[\]()#+\-.!])/g, '$1')
+    .replace(/\*\*([^*\n]+)\*\*/g, '$1')
+    .replace(/__([^_\n]+)__/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 
 const normalizeText = (value = '') =>
   String(value)
@@ -519,6 +537,50 @@ const isWebsiteQuestion = (question, navigationAction) => {
   ]);
 };
 
+const stripCurrentQuestionFromHistory = (history, question) => {
+  const cleanHistory = history
+    .filter((message) => message && ['user', 'assistant'].includes(message.role))
+    .map((message) => ({
+      role: message.role,
+      text: String(message.text || '').trim(),
+    }))
+    .filter((message) => message.text);
+
+  const last = cleanHistory[cleanHistory.length - 1];
+  if (last?.role === 'user' && last.text === question) {
+    return cleanHistory.slice(0, -1);
+  }
+
+  return cleanHistory;
+};
+
+const isFollowUpQuestion = (question) => {
+  const normalized = String(question || '').trim();
+  if (FOLLOW_UP_PATTERNS.some((pattern) => pattern.test(normalized))) return true;
+
+  const tokens = tokenize(normalized);
+  if (tokens.length <= 4 && textIncludesAny(normalizeText(normalized), ['more', 'that', 'this', 'deeper'])) {
+    return true;
+  }
+
+  return false;
+};
+
+const buildContextualQuestion = (question, history) => {
+  if (!isFollowUpQuestion(question) || !history.length) return question;
+
+  const lastUser = [...history].reverse().find((message) => message.role === 'user')?.text || '';
+  const lastAssistant = [...history].reverse().find((message) => message.role === 'assistant')?.text || '';
+
+  return [
+    'The user is asking a follow-up question in the same conversation.',
+    lastUser ? `Previous user topic: ${lastUser.slice(0, 500)}` : '',
+    lastAssistant ? `Previous assistant answer: ${lastAssistant.slice(0, 900)}` : '',
+    `Current follow-up: ${question}`,
+    'Retrieve scripture context that continues the previous topic.',
+  ].filter(Boolean).join('\n');
+};
+
 const normalizeEmbeddingResponse = (data) => {
   if (Array.isArray(data) && data.every((item) => typeof item === 'number')) return data;
   if (Array.isArray(data) && Array.isArray(data[0])) return data[0];
@@ -654,7 +716,7 @@ const fetchScriptureContext = async (question, bookFilter, debugInfo = {}) => {
   return verseContext;
 };
 
-const buildPrompt = ({ question, visibleScreenText, history, scriptureContext, websiteContext, websiteQuestion, navigationAction }) => {
+const buildPrompt = ({ question, contextualQuestion, visibleScreenText, history, scriptureContext, websiteContext, websiteQuestion, navigationAction }) => {
   const recentHistory = history
     .slice(-MAX_HISTORY_ITEMS)
     .map((message) => `${message.role === 'user' ? 'User' : 'Assistant'}: ${String(message.text || '').slice(0, 900)}`)
@@ -662,8 +724,9 @@ const buildPrompt = ({ question, visibleScreenText, history, scriptureContext, w
 
   return [
     'You are Ask the Pandit for the GitaLife 312 website.',
-    'Answer in clear, gentle English for students and young professionals, with a warm conversational tone.',
-    'Use simple formatting only: short paragraphs and brief bullets when useful. Do not use Markdown tables. Do not include stray backslashes or raw formatting symbols.',
+    'Answer in clear, gentle English for students and young professionals, like a kind person having a real conversation.',
+    'Give enough explanation to feel helpful: usually 2-4 short paragraphs, and brief bullets only when they make the idea easier to follow.',
+    'Use simple plain-text formatting only. Do not use Markdown tables, bold markers, decorative symbols, stray backslashes, or raw formatting symbols.',
     'Your theological viewpoint must be strictly ISKCON and Srila Prabhupada centered.',
     'For scripture, philosophy, theology, practice, Krishna consciousness, guru, devotional life, or meaning-of-life questions, use only the retrieved scriptures, translations, and purports provided below.',
     'Do not use outside traditions, speculative interpretations, generic Hinduism, Advaita, New Age ideas, or non-ISKCON commentary as authority.',
@@ -681,6 +744,8 @@ const buildPrompt = ({ question, visibleScreenText, history, scriptureContext, w
     `Recent chat:\n${recentHistory || 'No previous messages.'}`,
     '',
     `Retrieved Srila Prabhupada/ISKCON scripture context:\n${scriptureContext}`,
+    '',
+    contextualQuestion !== question ? `Contextual meaning of the user question:\n${contextualQuestion}` : '',
     '',
     `User question: ${question}`,
   ].filter(Boolean).join('\n');
@@ -705,12 +770,12 @@ const callHuggingFaceModel = async (prompt, model) => {
         messages: [
           {
             role: 'system',
-            content: 'You are Ask the Pandit for GitaLife 312. Answer in English only. Scripture and theology answers must be strictly ISKCON and Srila Prabhupada centered, using only retrieved scripture, translation, and purport context. Website questions may use provided website context.',
+            content: 'You are Ask the Pandit for GitaLife 312. Answer in English only. Sound warm and human, like an ongoing conversation. Scripture and theology answers must be strictly ISKCON and Srila Prabhupada centered, using only retrieved scripture, translation, and purport context. Website questions may use provided website context. Keep formatting plain; avoid Markdown symbols.',
           },
           { role: 'user', content: prompt },
         ],
         stream: false,
-        max_tokens: 650,
+        max_tokens: 850,
         temperature: 0.45,
       }),
     },
@@ -759,12 +824,13 @@ export default async function handler(req, res) {
     const retrievalDebug = {};
     const debug = body?.debug === true || req.headers['x-pandit-debug'] === '1';
     const visibleScreenText = String(body?.visible_screen_text || '').slice(0, MAX_VISIBLE_TEXT_CHARS);
-    const history = Array.isArray(body?.history) ? body.history : [];
+    const history = stripCurrentQuestionFromHistory(Array.isArray(body?.history) ? body.history : [], question);
+    const contextualQuestion = buildContextualQuestion(question, history);
     const bookFilter = String(body?.book_filter || '').trim();
     const [{ context: scriptureContext, citations, source }, websiteContext] = await timed(
       'retrieve_ms',
       () => Promise.all([
-        fetchScriptureContext(question, bookFilter, retrievalDebug),
+        fetchScriptureContext(contextualQuestion, bookFilter, retrievalDebug),
         fetchWebsiteContext(),
       ]),
       metrics,
@@ -773,6 +839,7 @@ export default async function handler(req, res) {
     const websiteQuestion = isWebsiteQuestion(question, navigationAction);
     const prompt = buildPrompt({
       question,
+      contextualQuestion,
       visibleScreenText,
       history,
       scriptureContext,
@@ -781,7 +848,8 @@ export default async function handler(req, res) {
       navigationAction,
     });
     const { answer, model } = await timed('chat_ms', () => callHuggingFace(prompt), metrics);
-    const citationText = !websiteQuestion && citations.length ? `\n\nCitations: ${unique(citations).join(', ')}` : '';
+    const cleanAnswer = sanitizeAssistantAnswer(answer);
+    const citationText = !websiteQuestion && citations.length ? `\n\nReferences: ${unique(citations).join(', ')}` : '';
 
     if (debug) {
       res.setHeader('x-pandit-debug', JSON.stringify({
@@ -798,7 +866,7 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('content-type', 'text/plain; charset=utf-8');
-    return res.status(200).send(`${answer || 'I do not have enough retrieved scripture to answer that.'}${citationText}`);
+    return res.status(200).send(`${cleanAnswer || 'I do not have enough retrieved scripture to answer that.'}${citationText}`);
   } catch (error) {
     return res.status(500).json({
       error: error instanceof Error ? error.message : 'Ask the Pandit failed.',
